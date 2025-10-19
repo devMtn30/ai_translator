@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <title>Book Viewer</title>
+  <style>
+    body {margin:0;background:#0b0c10;color:#fff;font-family:sans-serif;}
+    .topbar {
+      display:flex;justify-content:space-between;align-items:center;
+      background:#14161a;padding:10px 15px;
+    }
+    iframe {width:100%;height:calc(100vh - 50px);border:none;}
+    button {background:#2e7dff;border:0;color:#fff;padding:6px 10px;border-radius:8px;cursor:pointer;}
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <button onclick="history.back()">← Back</button>
+    <div>Progress: <span id="percent">0%</span></div>
+  </div>
+
+  <iframe id="pdfFrame"></iframe>
+
+  <!-- ✅ 같은 폴더에 있으므로 단순히 파일명만 -->
+  <script src="book_viewer.js"></script>
+</body>
+</html>

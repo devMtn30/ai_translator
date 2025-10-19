@@ -1,0 +1,250 @@
+body {
+  margin: 0;
+  font-family: 'Poppins', sans-serif;
+  background: #638EFF;
+  color: #fff;
+  overflow-x: hidden; /* 가로 스크롤 방지 */
+}
+
+/* 상단바 */
+.navbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 15px 20px;
+}
+
+.menu-btn {
+  font-size: 28px;
+  background: none;
+  border: none;
+  color: #fff;
+  cursor: pointer;
+}
+
+.welcome-text {
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.profile-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #fff;
+}
+
+/* 메인 콘텐츠 */
+.content {
+  padding: 20px;
+}
+
+.help-text {
+  font-size: 22px;
+  line-height: 1.4;
+  margin: 20px 0;
+}
+
+.card-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px;
+  margin-bottom: 40px;
+}
+
+.card {
+  position: relative;
+  border-radius: 16px;
+  padding: 20px;
+  text-decoration: none;
+  color: #000;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.15);
+  font-weight: bold;
+  min-height: 120px;
+}
+
+.card-top-left, .card-top-right {
+  position: absolute;
+  font-size: 20px;
+}
+
+.card-top-left {
+  top: 12px;
+  left: 12px;
+}
+
+.card-top-right {
+  top: 12px;
+  right: 12px;
+}
+
+.card-translate {
+  background: #D9FF6D;
+  grid-column: span 2;
+}
+
+.card-read {
+  background: #F6DFFF;
+}
+
+.card-quiz {
+  background: #9DFF9D;
+}
+
+.history-title {
+  font-size: 20px;
+  text-align: center;
+  margin-bottom: 15px;
+}
+
+.history-box {
+  background: #E0E0E0;
+  border-radius: 12px;
+  height: 120px;
+  width: 100%;
+}
+
+/* ===================== */
+/* 사이드바 스타일 & 애니메이션 */
+/* ===================== */
+.sidebar {
+  position: fixed;
+  top: 0;
+  left: -300px;
+  width: 250px;
+  height: 100%;
+  background-color: #fff;
+  color: #000;
+  box-shadow: 2px 0 5px rgba(0,0,0,0.3);
+  transition: left 0.3s ease;
+  z-index: 999;
+}
+
+.sidebar.open {
+  left: 0;
+}
+
+.sidebar-content {
+  padding: 20px;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 28px;
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  cursor: pointer;
+}
+
+.sidebar-menu {
+  list-style: none;
+  padding: 60px 0 0 0;
+}
+
+.sidebar-menu li {
+  margin-bottom: 20px;
+}
+
+.sidebar-menu li a {
+  text-decoration: none;
+  color: #000;
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.sidebar-menu li a .icon {
+  width: 24px;
+  height: 24px;
+}
+
+/* 기본 (모바일 전용) */
+.card-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr; /* 2열 */
+  gap: 15px;
+  margin-bottom: 40px;
+}
+
+.card {
+  position: relative;
+  border-radius: 16px;
+  padding: 20px;
+  text-decoration: none;
+  color: #000;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.15);
+  font-weight: bold;
+  min-height: 120px;
+}
+
+.card-translate {
+  background: #D9FF6D;
+  grid-column: span 2; /* 모바일에서는 큰 카드 */
+}
+
+.card-read {
+  background: #F6DFFF;
+}
+
+.card-quiz {
+  background: #9DFF9D;
+}
+
+/* ======================== */
+/* PC 버전 (768px 이상일 때) */
+/* ======================== */
+@media (min-width: 768px) {
+  .content {
+    max-width: 900px;
+    margin: 0 auto;
+  }
+
+  .card-grid {
+    grid-template-columns: repeat(3, 1fr); /* 3열 배치 */
+    gap: 20px;
+  }
+
+  .card {
+    min-height: 140px;
+    padding: 15px;
+    font-size: 14px;
+  }
+
+  .card-translate {
+    grid-column: span 1; /* PC에서는 Translate도 일반 크기 */
+  }
+}
+
+.card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;  /* 텍스트를 카드 아래쪽으로 */
+  align-items: flex-start;    /* 텍스트는 왼쪽 정렬 */
+  border-radius: 16px;
+  padding: 20px;
+  text-decoration: none;
+  color: #000;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.15);
+  font-weight: bold;
+  min-height: 120px;
+}
+
+.card-text {
+  font-size: 18px;
+  font-weight: 700;
+  margin: 0; /* 여백 초기화 */
+  margin-top: 10px; /* 아이콘과 살짝 간격 */
+}
+/* 메인 카드 hover 효과 */
+.card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card:hover {
+  transform: scale(1.05);
+  box-shadow: 0 6px 10px rgba(0,0,0,0.25);
+}

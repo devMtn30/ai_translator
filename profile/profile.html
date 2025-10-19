@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Profile</title>
+  <link rel="stylesheet" href="profile.css">
+  <link rel="stylesheet" href="../menu/menu.css">
+</head>
+<body>
+  <!-- 상단 네비게이션 -->
+  <header class="navbar">
+    <button id="menuBtn" class="menu-btn">☰</button>
+    <span class="welcome-text">Profile</span>
+    <img src="../assets/avatar.png" alt="Profile" class="profile-icon">
+  </header>
+
+  <main class="content">
+   
+    <div class="profile-header">
+      <img src="../assets/avatar.png" alt="Avatar" class="avatar">
+      <h2 class="player-name">Player Name</h2>
+ 
+	 
+ <button id="editBtn" class="edit-btn">Edit Profile</button>
+
+</div>
+    
+
+   
+    <div class="info-card">
+      <div class="info-row">
+        <span class="label">First Name</span>
+        <span class="value">John</span>
+      </div>
+      <div class="info-row">
+        <span class="label">Last Name</span>
+        <span class="value">Doe</span>
+      </div>
+      <div class="info-row">
+        <span class="label">Year</span>
+        <span class="value">3rd Year</span>
+      </div>
+      <div class="info-row">
+        <span class="label">Student ID</span>
+        <span class="value">02000xxxxx</span>
+      </div>
+      <div class="info-row">
+        <span class="label">Gender</span>
+        <span class="value">Male</span>
+      </div>
+      <div class="info-row">
+        <span class="label">Email</span>
+        <span class="value">surname.xxx@gmail.com</span>
+      </div>
+    </div>
+  </main>
+
+  <!-- 사이드바 -->
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-content">
+      <button id="closeBtn" class="close-btn">&times;</button>
+      <ul class="sidebar-menu">
+        <li><a href="../main/main.html"><img src="../assets/icons/home.png" class="icon"> Home</a></li>
+        <li><a href="profile.html"><img src="../assets/icons/profile.png" class="icon"> Profile</a></li>
+        <li><a href="../ai-translator/translator.html"><img src="../assets/icons/ai.png" class="icon"> AI Translator</a></li>
+		<li><a href="../translator_simple/translator_simple.html"><img src="../assets/icons/ai.png" class="icon"> Simple Translator</a></li>
+        <li><a href="../quiz/quiz.html"><img src="../assets/icons/quiz.png" class="icon"> Quiz</a></li>
+        <li><a href="../reader/reader.html"><img src="../assets/icons/read.png" class="icon"> Reader</a></li>
+        <li><a href="../login/login.html"><img src="../assets/icons/logout.png" class="icon"> Logout</a></li>
+      </ul>
+    </div>
+  </aside>
+
+  <script src="profile.js"></script>
+</body>
+</html>

@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reader</title>
+  <link rel="stylesheet" href="reader.css">
+  <link rel="stylesheet" href="../menu/menu.css">
+</head>
+<body>
+  <!-- 상단 네비게이션 -->
+  <header class="navbar">
+    <button id="menuBtn" class="menu-btn">☰</button>
+    <span class="welcome-text">Hi, Player</span>
+    <img src="../assets/avatar.png" alt="Profile" class="profile-icon">
+  </header>
+
+  <!-- 메인 콘텐츠 -->
+  <main class="content">
+    <h2 class="title">Books</h2>
+
+    <!-- 책 카드 1 -->
+    <div class="book-card" data-file="cebuano.pdf">
+      <img src="../assets/icons/cebuano.png" alt="Cebuano" class="book-cover">
+      <div class="book-info">
+        <h3 class="book-title">Cebuano For Beginners</h3>
+        <p class="book-author">Elsa Paula Yap</p>
+        <div class="progress-container">
+          <span class="progress-text">0%</span>
+          <progress value="0" max="100"></progress>
+        </div>
+        <button class="read-btn">Read</button>
+      </div>
+    </div>
+
+    <!-- 책 카드 2 -->
+    <div class="book-card" data-file="bikol.pdf">
+      <img src="../assets/icons/bikol.png" alt="Bikol" class="book-cover">
+      <div class="book-info">
+        <h3 class="book-title">Bikol Grammar Notes</h3>
+        <p class="book-author">Malcolm W. Mintz</p>
+        <div class="progress-container">
+          <span class="progress-text">0%</span>
+          <progress value="0" max="100"></progress>
+        </div>
+        <button class="read-btn">Read</button>
+      </div>
+    </div>
+
+    <!-- 책 카드 3 -->
+    <div class="book-card" data-file="sabayan.pdf">
+      <img src="../assets/icons/sabayan.png" alt="Sa Bayan" class="book-cover">
+      <div class="book-info">
+        <h3 class="book-title">Sa Bayan ng Anihan</h3>
+        <p class="book-author">Genaro R. Gojo Cruz</p>
+        <div class="progress-container">
+          <span class="progress-text">0%</span>
+          <progress value="0" max="100"></progress>
+        </div>
+        <button class="read-btn">Read</button>
+      </div>
+    </div>
+  </main>
+
+  <!-- 사이드바 -->
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-content">
+      <button id="closeBtn" class="close-btn">&times;</button>
+      <ul class="sidebar-menu">
+        <li><a href="../main/main.html"><img src="../assets/icons/home.png" class="icon"> Home</a></li>
+        <li><a href="../profile/profile.html"><img src="../assets/icons/profile.png" class="icon"> Profile</a></li>
+        <li><a href="../ai-translator/translator.html"><img src="../assets/icons/ai.png" class="icon"> AI Translator</a></li>
+        <li><a href="../translator_simple/translator_simple.html"><img src="../assets/icons/ai.png" class="icon"> Simple Translator</a></li>
+        <li><a href="../quiz/quiz.html"><img src="../assets/icons/quiz.png" class="icon"> Quiz</a></li>
+        <li><a href="reader.html"><img src="../assets/icons/read.png" class="icon"> Reader</a></li>
+        <li><a href="../login/login.html"><img src="../assets/icons/logout.png" class="icon"> Logout</a></li>
+      </ul>
+    </div>
+  </aside>
+
+  <script src="reader.js"></script>
+</body>
+</html>

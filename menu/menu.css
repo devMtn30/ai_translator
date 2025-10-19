@@ -1,0 +1,73 @@
+/* ===== 사이드바 ===== */
+.sidebar {
+  position: fixed;
+  top: 0;
+  left: -300px; /* 처음엔 화면 밖 */
+  width: 250px;
+  height: 100%;
+  background-color: #fff;
+  color: #000;
+  box-shadow: 2px 0 5px rgba(0,0,0,0.3);
+  transition: left 0.3s ease;
+  z-index: 999;
+}
+
+.sidebar.open {
+  left: 0; /* 열릴 때 */
+}
+
+.sidebar-content {
+  padding: 20px;
+  position: relative;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 28px;
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  cursor: pointer;
+}
+
+/* ===== 메뉴 ===== */
+.sidebar-menu {
+  list-style: none;  /* 불릿 제거 */
+  padding: 60px 0 0 0;
+  margin: 0;
+}
+
+.sidebar-menu li {
+  margin-bottom: 20px;
+}
+
+.sidebar-menu li a {
+  text-decoration: none;   /* 밑줄 제거 */
+  color: #000;             /* 글씨 검정 */
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  gap: 12px;               /* 아이콘-글자 간격 */
+  transition: color 0.2s;
+}
+
+.sidebar-menu li a:hover {
+  color: #638EFF;          /* hover 시 파란색 */
+}
+
+/* ===== 아이콘 ===== */
+.sidebar-menu li a .icon {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+}
+/* 모든 버튼에 공통 hover 효과 */
+button, .btn, .quiz-btn {
+  transition: transform 0.2s ease, background 0.2s ease;
+}
+
+button:hover, .btn:hover, .quiz-btn:hover {
+  transform: scale(1.05);
+  background: #f0f0f0;
+}

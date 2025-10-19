@@ -1,0 +1,228 @@
+body {
+  margin: 0;
+  font-family: 'Poppins', sans-serif;
+  background: #638EFF;
+  color: #fff;
+  min-height: 100vh;
+}
+
+/* 상단바 */
+.navbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 15px 20px;
+}
+
+.menu-btn {
+  font-size: 28px;
+  background: none;
+  border: none;
+  color: #fff;
+  cursor: pointer;
+}
+
+.welcome-text {
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.profile-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #fff;
+}
+
+/* 콘텐츠 */
+.content {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.title {
+  font-size: 28px;
+  font-family: 'Georgia', serif;
+  margin-top: 40px;
+  margin-bottom: 10px;
+  text-align: center;
+}
+
+.subtitle {
+  font-size: 18px;
+  margin-bottom: 40px;
+  text-align: center;
+}
+
+/* 버튼 영역 */
+.quiz-buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  width: 100%;
+  max-width: 400px;
+}
+
+.quiz-btn {
+  background: #fff;
+  color: #000;
+  font-size: 18px;
+  font-weight: 600;
+  border: none;
+  border-radius: 12px;
+  padding: 15px;
+  cursor: pointer;
+  text-align: center;
+  transition: transform 0.2s, background 0.2s;
+}
+
+.quiz-btn:hover {
+  background: #f0f0f0;
+  transform: scale(1.05);
+}
+
+/* 마지막 버튼 (E type)은 가운데 정렬) */
+.quiz-buttons button:last-child {
+  grid-column: span 2;
+  justify-self: center;
+  width: 60%;
+}
+
+/* Quiz Container Styles */
+#quizContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  max-width: 400px;
+  margin-top: 20px;
+}
+
+.word-display {
+  font-size: 36px;
+  font-family: 'Georgia', serif;
+  font-weight: bold;
+  text-align: center;
+  margin-bottom: 30px;
+  color: #fff;
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+}
+
+.quiz-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  width: 100%;
+  margin-bottom: 20px;
+}
+
+.option-btn {
+  background: #fff;
+  color: #000;
+  font-size: 18px;
+  font-weight: 600;
+  border: none;
+  border-radius: 12px;
+  padding: 15px;
+  cursor: pointer;
+  text-align: center;
+  transition: transform 0.2s, background 0.3s;
+}
+
+.option-btn:hover:not(:disabled) {
+  background: #f0f0f0;
+  transform: scale(1.05);
+}
+
+.option-btn:disabled {
+  cursor: not-allowed;
+  transform: none;
+}
+
+.correct {
+  background: #4CAF50 !important;
+  color: white !important;
+}
+
+.incorrect {
+  background: #f44336 !important;
+  color: white !important;
+}
+
+.next-btn {
+  background: #fff;
+  color: #000;
+  font-size: 18px;
+  font-weight: 600;
+  border: none;
+  border-radius: 12px;
+  padding: 15px 30px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.next-btn:hover {
+  background: #f0f0f0;
+}
+
+.trivia-box {
+  background: #fff;
+  color: #000;
+  padding: 15px;
+  border-radius: 12px;
+  margin-top: 20px;
+  width: 100%;
+  text-align: left;
+  font-size: 16px;
+  line-height: 1.5;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.feedback {
+  font-size: 36px;
+  font-weight: bold;
+  margin-top: 10px;
+  text-align: center;
+  color: #fff;
+  text-shadow: 1px 1px 3px rgba(0,0,0,0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+}
+.feedback .icon {
+  font-size: 40px;
+  line-height: 1;
+}
+.feedback .icon.check {
+  color: #4CAF50; /* green */
+}
+.feedback .icon.cross {
+  color: #f44336; /* red */
+}
+
+/* Confetti styles */
+.confetti-piece {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  opacity: 0.9;
+  z-index: 9999;
+  pointer-events: none;
+  border-radius: 2px;
+  animation-fill-mode: forwards;
+  animation-timing-function: ease-out;
+}
+
+@keyframes confetti-pop {
+  0% {
+    transform: translate(0, 0) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(var(--x), var(--y)) rotate(720deg);
+    opacity: 0;
+  }
+}

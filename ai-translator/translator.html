@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Translator</title>
+  <link rel="stylesheet" href="translator.css">
+  <link rel="stylesheet" href="../menu/menu.css">
+</head>
+<body>
+  <!-- 상단 네비게이션 -->
+  <header class="navbar">
+    <button id="menuBtn" class="menu-btn">☰</button>
+    <span class="welcome-text">Hi, Player</span>
+    <img src="../assets/avatar.png" alt="Profile" class="profile-icon">
+  </header>
+
+  <!-- 메인 콘텐츠 -->
+  <main class="content">
+    <h2 class="title">AI Translator</h2>
+
+    <!-- 입력 영역 -->
+    <textarea id="inputText" placeholder="Enter text to translate..."></textarea>
+
+    <!-- 버튼 두 개 -->
+    <button class="btn" id="chatBtn">Translate (Chat)</button>
+    <button class="btn" id="voiceBtn">Translate (Voice)</button>
+
+    <!-- 결과 영역 -->
+    <div id="resultBox" class="result-box">
+      The answers.
+    </div>
+
+    <!-- 🎤 추가된 부분: 마이크 버튼 + 오디오 출력 -->
+    <button class="btn" id="micBtn">🎤 Speak</button>
+    <audio id="audioPlayer" controls style="display:none;"></audio>
+  </main>
+
+  <!-- 슬라이드 사이드바 -->
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-content">
+      <button id="closeBtn" class="close-btn">&times;</button>
+      <ul class="sidebar-menu">
+        <li><a href="../main/main.html"><img src="../assets/icons/home.png" class="icon"> Home</a></li>
+       
+        <li><a href="../profile/profile.html"><img src="../assets/icons/profile.png" class="icon"> Profile</a></li>
+        <li><a href="translator.html"><img src="../assets/icons/ai.png" class="icon"> AI Translator</a></li>
+		<li>
+  <a href="../translator_simple/translator_simple.html">
+    <img src="../assets/icons/ai.png" class="icon"> Simple Translator
+  </a>
+</li>
+
+        <li><a href="../quiz/quiz.html"><img src="../assets/icons/quiz.png" class="icon"> Quiz</a></li>
+        <li><a href="../reader/reader.html"><img src="../assets/icons/read.png" class="icon"> Reader</a></li>
+        <li><a href="../login/login.html"><img src="../assets/icons/logout.png" class="icon"> Logout</a></li>
+      </ul>
+    </div>
+  </aside>
+
+  <script src="translator.js"></script>
+</body>
+</html>

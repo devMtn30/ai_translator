@@ -1,0 +1,100 @@
+body {
+  margin: 0;
+  font-family: 'Poppins', sans-serif;
+  background: #638EFF;
+  color: #fff;
+  min-height: 100vh;
+}
+
+/* 상단바 */
+.navbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 15px 20px;
+}
+
+.menu-btn {
+  font-size: 28px;
+  background: none;
+  border: none;
+  color: #fff;
+  cursor: pointer;
+}
+
+.welcome-text {
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.profile-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #fff;
+}
+
+/* 아바타 */
+.profile-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 30px 0;
+}
+
+.avatar {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  background: #fff;
+  margin-bottom: 15px;
+}
+
+.player-name {
+  font-size: 22px;
+  font-weight: bold;
+  margin: 0;
+}
+
+.player-gender {
+  font-size: 14px;
+  margin: 5px 0 0;
+}
+
+/* 정보 카드 */
+.info-card {
+  background: #fff;
+  color: #000;
+  border-radius: 16px;
+  padding: 20px;
+  margin: 0 20px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+}
+
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 0;
+  border-bottom: 1px solid #ddd;
+}
+
+.info-row:last-child {
+  border-bottom: none;
+}
+
+.label {
+  font-weight: 600;
+  color: #444;
+}
+
+.value {
+  font-weight: 500;
+  color: #000;
+}
+
+
+.edit-btn{
+  background:#fff; color:#638EFF; border:2px solid #638EFF;
+  padding:8px 16px; border-radius:10px; font-weight:600; cursor:pointer;
+}
+.edit-btn:hover{ background:#638EFF; color:#fff; }

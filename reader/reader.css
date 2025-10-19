@@ -1,0 +1,110 @@
+body {
+  margin: 0;
+  font-family: 'Poppins', sans-serif;
+  background: #638EFF;
+  color: #fff;
+  min-height: 100vh;
+}
+
+/* 상단바 */
+.navbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 15px 20px;
+}
+
+.menu-btn {
+  font-size: 28px;
+  background: none;
+  border: none;
+  color: #fff;
+  cursor: pointer;
+}
+
+.welcome-text {
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.profile-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #fff;
+}
+
+/* 콘텐츠 */
+.content {
+  padding: 20px;
+}
+
+.title {
+  font-size: 28px;
+  font-family: 'Georgia', serif; /* Figma 느낌 나는 폰트 */
+  text-align: center;
+  margin: 20px 0;
+}
+
+/* 책 카드 */
+.book-card {
+  background: #fff;
+  color: #000;
+  border-radius: 16px;
+  padding: 15px;
+  display: flex;
+  gap: 15px;
+  align-items: flex-start;
+  margin-bottom: 20px;
+}
+
+.book-cover {
+  width: 80px;
+  height: 110px;
+  object-fit: cover;
+  border-radius: 6px;
+}
+
+.book-info {
+  flex: 1;
+}
+
+.book-title {
+  font-size: 18px;
+  margin: 0;
+  font-weight: 700;
+}
+
+.book-author {
+  font-size: 14px;
+  margin: 5px 0 10px;
+  color: #444;
+}
+
+/* 진행률 */
+.progress-container {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.progress-container span {
+  font-size: 12px;
+  color: #000;
+}
+
+progress {
+  flex: 1;
+  height: 6px;
+  appearance: none;
+}
+
+progress::-webkit-progress-bar {
+  background-color: #e0e0e0;
+  border-radius: 3px;
+}
+
+progress::-webkit-progress-value {
+  background-color: #3b82f6; /* 파란색 진행바 */
+  border-radius: 3px;
+}
