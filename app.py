@@ -578,9 +578,9 @@ if __name__ == "__main__":
     app.run(
         host="0.0.0.0",
         port=443,
-        ssl_context=(
-            "C:/Users/Administrator/my-app/pronocoach.duckdns.org-crt.pem",
-            "C:/Users/Administrator/my-app/pronocoach.duckdns.org-key.pem"
-        )
+        # ssl_context=(
+        #     "C:/Users/Administrator/my-app/pronocoach.duckdns.org-crt.pem",
+        #     "C:/Users/Administrator/my-app/pronocoach.duckdns.org-key.pem"
+        # )
     )
 
