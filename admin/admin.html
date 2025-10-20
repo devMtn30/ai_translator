@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard</title>
+  <link rel="stylesheet" href="admin.css">
+  <link rel="stylesheet" href="../menu/menu.css">
+</head>
+<body>
+  <header class="navbar">
+    <button id="menuBtn" class="menu-btn">☰</button>
+    <span class="welcome-text">Admin Panel</span>
+    <img src="../assets/avatar.png" alt="Profile" class="profile-icon">
+  </header>
+
+  <div id="lockScreen" class="lock-screen">
+    <div class="lock-dialog">
+      <h2>Restricted Area</h2>
+      <p>Enter the demo password to unlock the dashboard.</p>
+      <input type="password" id="passwordInput" placeholder="Demo password">
+      <button id="unlockBtn">Unlock</button>
+      <p id="unlockError" class="lock-error"></p>
+    </div>
+  </div>
+
+  <main class="admin" id="adminContent">
+    <section class="cards" id="metricCards"></section>
+
+    <section class="panel panel--charts">
+      <div class="panel__header">
+        <h3>Daily Activity</h3>
+        <span class="panel__subtitle">Last 7 Days Overview</span>
+      </div>
+      <div class="charts-grid">
+        <article class="chart-card">
+          <h4 class="chart-card__title">Daily Quiz Attempts</h4>
+          <div class="chart-card__canvas">
+            <canvas id="quizChart" aria-label="Daily quiz attempts bar chart"></canvas>
+          </div>
+        </article>
+        <article class="chart-card">
+          <h4 class="chart-card__title">Daily Signups</h4>
+          <div class="chart-card__canvas">
+            <canvas id="signupChart" aria-label="Daily signups line chart"></canvas>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel__header">
+        <h3>Active Sessions</h3>
+        <button class="panel__refresh" id="refreshOnlineBtn">Refresh</button>
+      </div>
+      <p class="online-count"><span id="onlineCount">0</span> users online now.</p>
+    </section>
+
+    <section class="panel">
+      <div class="panel__header">
+        <h3>Members</h3>
+        <div class="panel__actions">
+          <input type="search" id="userSearch" placeholder="Search email or name">
+          <button class="panel__refresh" id="refreshUsersBtn">Refresh</button>
+        </div>
+      </div>
+      <div class="table-wrapper">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Email</th>
+              <th>Year</th>
+              <th>Verified</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="usersTableBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel__header">
+        <h3>Quizzes</h3>
+        <div class="panel__actions">
+          <button class="panel__refresh" id="refreshQuizzesBtn">Refresh</button>
+          <button class="panel__primary" id="createQuizBtn">New Quiz</button>
+        </div>
+      </div>
+      <div id="quizList" class="quiz-list"></div>
+    </section>
+  </main>
+
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-content">
+      <button id="closeBtn" class="close-btn">&times;</button>
+      <ul class="sidebar-menu">
+        <li><a href="../main/main.html"><img src="../assets/icons/home.png" class="icon" alt=""> Home</a></li>
+        <li><a href="../profile/profile.html"><img src="../assets/icons/profile.png" class="icon" alt=""> Profile</a></li>
+        <li><a href="../ai-translator/translator.html"><img src="../assets/icons/ai.png" class="icon" alt=""> AI Translator</a></li>
+        <li><a href="../translator_simple/translator_simple.html"><img src="../assets/icons/ai.png" class="icon" alt=""> Simple Translator</a></li>
+        <li><a href="../quiz/quiz.html"><img src="../assets/icons/quiz.png" class="icon" alt=""> Quiz</a></li>
+        <li><a href="../reader/reader.html"><img src="../assets/icons/read.png" class="icon" alt=""> Reader</a></li>
+        <li><a href="admin.html" class="active"><img src="../assets/icons/history.png" class="icon" alt=""> Admin</a></li>
+        <li><a href="../login/login.html"><img src="../assets/icons/logout.png" class="icon" alt=""> Logout</a></li>
+      </ul>
+    </div>
+  </aside>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="admin.js"></script>
+</body>
+</html>

@@ -97,14 +97,31 @@ body {
   color: #fefefe;
 }
 
-/* Quiz Container Styles */
-#quizContainer {
+.quiz-container {
   display: flex;
   flex-direction: column;
   align-items: center;
   width: 100%;
   max-width: 400px;
   margin-top: 20px;
+}
+
+.question-view {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 16px;
+  min-height: 360px;
+}
+
+#questionView,
+#resultView {
+  width: 100%;
+}
+
+#resultView[hidden] {
+  display: none;
 }
 
 .word-display {
@@ -117,12 +134,40 @@ body {
   text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
 }
 
+.feedback-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 14px 18px;
+  border-radius: 14px;
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 18px;
+  transition: transform 0.2s, box-shadow 0.2s, opacity 0.2s;
+}
+
+.feedback-banner__icon {
+  font-size: 28px;
+}
+
+.feedback-banner--correct {
+  background: #dcfce7;
+  color: #166534;
+  box-shadow: 0 10px 24px rgba(22, 101, 52, 0.25);
+}
+
+.feedback-banner--incorrect {
+  background: #fee2e2;
+  color: #991b1b;
+  box-shadow: 0 10px 24px rgba(153, 27, 27, 0.25);
+}
+
 .quiz-options {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 20px;
   width: 100%;
-  margin-bottom: 20px;
 }
 
 .option-btn {
@@ -166,7 +211,8 @@ body {
   display: flex;
   justify-content: center;
   width: 100%;
-  margin-top: 18px;
+  margin-top: auto;
+  padding-top: 12px;
 }
 
 .next-btn {
@@ -203,32 +249,16 @@ body {
   color: #000;
   padding: 15px;
   border-radius: 12px;
-  margin-top: 20px;
+  margin-top: 0;
   width: 100%;
   text-align: left;
   font-size: 16px;
   line-height: 1.5;
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
-
-.feedback {
-  font-size: 36px;
-  font-weight: bold;
-  margin-top: 10px;
-  text-align: center;
-  color: #fff;
-  text-shadow: 1px 1px 3px rgba(0,0,0,0.7);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 10px;
-}
-.feedback .icon {
-  font-size: 40px;
-  line-height: 1;
-}
-.feedback .icon.check {
-  color: #4CAF50; /* green */
+  box-sizing: border-box;
+  max-width: 100%;
+  word-break: break-word;
+  overflow-wrap: anywhere;
 }
 
 .breakdown {
@@ -296,13 +326,11 @@ body {
   margin-bottom: 8px;
   text-align: center;
 }
-.feedback .icon.cross {
-  color: #f44336; /* red */
-}
 
 /* Confetti styles */
 .confetti-piece {
   position: absolute;
+
   width: 10px;
   height: 10px;
   opacity: 0.9;
@@ -321,5 +349,51 @@ body {
   100% {
     transform: translate(var(--x), var(--y)) rotate(720deg);
     opacity: 0;
+  }
+}
+
+@media (max-width: 600px) {
+  .quiz-container {
+    padding: 0 10px;
+  }
+
+  .question-view {
+    gap: 12px;
+    min-height: unset;
+  }
+
+  .word-display {
+    font-size: 26px;
+    margin-bottom: 12px;
+  }
+
+  .quiz-options {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .option-btn {
+    padding: 12px;
+  }
+
+  .feedback-banner {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    font-size: 16px;
+    padding: 12px;
+  }
+
+  .trivia-box {
+    font-size: 14px;
+    padding: 12px;
+  }
+
+  .next-controls {
+    padding-top: 16px;
+  }
+
+  .next-btn--progress {
+    width: 100%;
   }
 }

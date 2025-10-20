@@ -40,10 +40,10 @@ Translation & AI Voice Input
 
 ## Admin Dashboard
 
-* [ ] Expose `/admin` page guarded by front-end password prompt that validates against hard-coded demo credential.
-* [ ] Implement user management views: list all members, show online counts, allow profile edits.
-* [ ] Build quiz management interface for creating, editing, and deleting questions.
-* [ ] Develop dashboard cards summarizing member totals, active users, and recent activity metrics.
+* [x] Expose `/admin` page guarded by front-end password prompt that validates against hard-coded demo credential.
+* [x] Implement user management views: list all members, show online counts, allow profile edits.
+* [x] Build quiz management interface for creating, editing, and deleting questions.
+* [x] Develop dashboard cards summarizing member totals, active users, and recent activity metrics.
 
 ---
 

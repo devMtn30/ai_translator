@@ -23,9 +23,17 @@
     <div id="quizButtons" class="quiz-buttons"></div>
     <div id="quizStatus" class="quiz-status"></div>
 
-    <div id="quizContainer" style="display: none;">
-      <div id="wordDisplay" class="word-display"></div>
-      <div id="optionsContainer" class="quiz-options"></div>
+    <div id="quizContainer" class="quiz-container" style="display: none;">
+      <div id="questionView" class="question-view">
+        <div id="feedbackBanner" class="feedback-banner" hidden>
+          <span id="feedbackIcon" class="feedback-banner__icon">✅</span>
+          <span id="feedbackText" class="feedback-banner__text">Correct!</span>
+        </div>
+        <div id="wordDisplay" class="word-display"></div>
+        <div id="optionsContainer" class="quiz-options"></div>
+        <div id="noteBox" class="trivia-box" hidden></div>
+      </div>
+      <div id="resultView" class="result-view" hidden></div>
     </div>
   </main>
 
@@ -37,9 +45,10 @@
         <li><a href="../main/main.html"><img src="../assets/icons/home.png" class="icon"> Home</a></li>
         <li><a href="../profile/profile.html"><img src="../assets/icons/profile.png" class="icon"> Profile</a></li>
         <li><a href="../ai-translator/translator.html"><img src="../assets/icons/ai.png" class="icon"> AI Translator</a></li>
-		<li><a href="../translator_simple/translator_simple.html"><img src="../assets/icons/ai.png" class="icon"> Simple Translator</a></li>
+        <li><a href="../translator_simple/translator_simple.html"><img src="../assets/icons/ai.png" class="icon"> Simple Translator</a></li>
         <li><a href="quiz.html"><img src="../assets/icons/quiz.png" class="icon"> Quiz</a></li>
         <li><a href="../reader/reader.html"><img src="../assets/icons/read.png" class="icon"> Reader</a></li>
+        <li><a href="../admin/admin.html"><img src="../assets/icons/history.png" class="icon"> Admin</a></li>
         <li><a href="../login/login.html"><img src="../assets/icons/logout.png" class="icon"> Logout</a></li>
       </ul>
     </div>

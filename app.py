@@ -1581,6 +1581,7 @@ def admin_analytics():
     now = datetime.utcnow()
     last_24h = now - timedelta(hours=24)
     last_7d = now - timedelta(days=7)
+    last_7d_start = (now - timedelta(days=6)).replace(hour=0, minute=0, second=0, microsecond=0)
 
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
@@ -1621,6 +1622,52 @@ def admin_analytics():
         )
         reading_stats = cursor.fetchone() or {}
 
+        cursor.execute(
+            """
+            SELECT DATE(created_at) AS day, COUNT(*) AS signups
+            FROM users
+            WHERE created_at >= %s
+            GROUP BY DATE(created_at)
+            ORDER BY DATE(created_at) ASC
+            """,
+            (last_7d_start,),
+        )
+        signups_by_day = cursor.fetchall() or []
+
+        cursor.execute(
+            """
+            SELECT DATE(completed_at) AS day, COUNT(*) AS attempts
+            FROM quiz_attempts
+            WHERE completed_at >= %s
+            GROUP BY DATE(completed_at)
+            ORDER BY DATE(completed_at) ASC
+            """,
+            (last_7d_start,),
+        )
+        attempts_by_day = cursor.fetchall() or []
+
+        daily_signups_lookup = {
+            row["day"].isoformat() if hasattr(row["day"], "isoformat") else str(row["day"]): row.get("signups", 0) or 0
+            for row in signups_by_day
+            if row.get("day") is not None
+        }
+        daily_attempts_lookup = {
+            row["day"].isoformat() if hasattr(row["day"], "isoformat") else str(row["day"]): row.get("attempts", 0) or 0
+            for row in attempts_by_day
+            if row.get("day") is not None
+        }
+
+        daily_series = []
+        for offset in range(7):
+            day = (last_7d_start.date() + timedelta(days=offset)).isoformat()
+            daily_series.append(
+                {
+                    "date": day,
+                    "quiz_attempts": daily_attempts_lookup.get(day, 0),
+                    "signups": daily_signups_lookup.get(day, 0),
+                }
+            )
+
         analytics = {
             "total_users": user_stats.get("total_users", 0) or 0,
             "verified_users": user_stats.get("verified_users", 0) or 0,
@@ -1631,6 +1678,7 @@ def admin_analytics():
             "attempts_last_24h": attempt_stats.get("attempts_24h", 0) or 0,
             "reading_updates_last_24h": reading_stats.get("recent_reads", 0) or 0,
             "translations_last_24h": 0,
+            "daily_activity": daily_series,
         }
         return json_response(True, "Analytics fetched.", {"analytics": analytics})
     finally:

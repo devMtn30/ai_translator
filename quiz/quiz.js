@@ -9,6 +9,8 @@ const closeBtn = document.getElementById("closeBtn");
 const quizButtonsContainer = document.getElementById("quizButtons");
 const quizStatus = document.getElementById("quizStatus");
 const quizContainer = document.getElementById("quizContainer");
+const questionView = document.getElementById("questionView");
+const resultView = document.getElementById("resultView");
 const wordDisplay = document.getElementById("wordDisplay");
 const optionsContainer = document.getElementById("optionsContainer");
 const title = document.querySelector(".title");
@@ -25,6 +27,29 @@ let responses = [];
 let locked = false;
 let nextControls = null;
 
+const JSON_HEADERS = { "Content-Type": "application/json" };
+
+function fetchJSON(url, options = {}) {
+  const init = {
+    credentials: "include",
+    ...options,
+  };
+  if (init.body && !(init.body instanceof FormData)) {
+    init.headers = {
+      ...JSON_HEADERS,
+      ...(options.headers || {}),
+    };
+  }
+  return fetch(url, init).then(async response => {
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok || payload?.success === false) {
+      const message = payload?.message || `Request failed (${response.status})`;
+      throw new Error(message);
+    }
+    return payload;
+  });
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   resetView();
   loadQuizzes();
@@ -34,18 +59,14 @@ function loadQuizzes() {
   quizButtonsContainer.innerHTML = "";
   quizStatus.textContent = "Loading quizzes...";
 
-  fetch("/api/quizzes")
-    .then(res => res.json())
+  fetchJSON("/api/quizzes")
     .then(payload => {
-      if (!payload || !payload.success) {
-        throw new Error(payload?.message || "Failed to load quizzes.");
-      }
       quizzes = (payload.data && payload.data.quizzes) || [];
       renderQuizButtons();
     })
     .catch(err => {
       console.error("❌ failed loading quiz list:", err);
-      quizStatus.textContent = "Unable to load quizzes. Please try again.";
+      quizStatus.textContent = err.message || "Unable to load quizzes. Please try again.";
     });
 }
 
@@ -69,12 +90,8 @@ function renderQuizButtons() {
 
 function startQuiz(quizId) {
   quizStatus.textContent = "Loading quiz...";
-  fetch(`/api/quizzes/${quizId}`)
-    .then(res => res.json())
+  fetchJSON(`/api/quizzes/${quizId}`)
     .then(payload => {
-      if (!payload || !payload.success) {
-        throw new Error(payload?.message || "Failed to load quiz.");
-      }
       const quiz = payload.data?.quiz;
       if (!quiz || !Array.isArray(quiz.questions) || !quiz.questions.length) {
         throw new Error("Quiz has no questions.");
@@ -100,13 +117,19 @@ function setupQuiz(quiz) {
   quizButtonsContainer.style.display = "none";
   quizStatus.textContent = "";
   quizContainer.style.display = "block";
+  questionView.hidden = false;
+  resultView.hidden = true;
+  resultView.innerHTML = "";
 
   displayQuestion();
 }
 
 function displayQuestion() {
-  clearFeedback();
   locked = false;
+  questionView.hidden = false;
+  resultView.hidden = true;
+  hideFeedback();
+  disposeNextButton();
 
   const question = currentQuestions[currentQuestionIndex];
   wordDisplay.textContent = question.prompt;
@@ -157,37 +180,36 @@ function highlightOptions(question, selectedOptionId) {
 }
 
 function showFeedback(question, isCorrect, nextAction) {
-  clearFeedback();
-
-  const feedbackDiv = document.createElement("div");
-  feedbackDiv.className = "feedback";
-  feedbackDiv.style.color = isCorrect ? "#4CAF50" : "#f44336";
-  feedbackDiv.innerHTML = isCorrect
-    ? 'Correct! <span class="icon">✅</span>'
-    : 'Wrong <span class="icon">❌</span>';
-  quizContainer.appendChild(feedbackDiv);
-
-  if (nextAction) {
-    renderNextButton(nextAction, feedbackDiv);
-  }
+  disposeNextButton();
+  feedbackBanner.hidden = false;
+  feedbackBanner.classList.remove("feedback-banner--correct", "feedback-banner--incorrect");
+  feedbackBanner.classList.add(isCorrect ? "feedback-banner--correct" : "feedback-banner--incorrect");
+  feedbackIcon.textContent = isCorrect ? "✅" : "❌";
+  feedbackText.textContent = isCorrect ? "Correct!" : "Incorrect.";
 
   if (question.explanation) {
-    const triviaDiv = document.createElement("div");
-    triviaDiv.className = "trivia-box";
-    triviaDiv.innerHTML = `<p><strong>Note:</strong> ${question.explanation}</p>`;
-    quizContainer.appendChild(triviaDiv);
+    noteBox.hidden = false;
+    noteBox.innerHTML = `<p><strong>Note:</strong> ${question.explanation}</p>`;
+  } else {
+    noteBox.hidden = true;
+    noteBox.innerHTML = "";
+  }
+
+  if (nextAction) {
+    renderNextButton(nextAction);
   }
 }
 
-function clearFeedback() {
-  quizContainer.querySelectorAll(".feedback, .trivia-box").forEach(node => node.remove());
-  optionsContainer.querySelectorAll("button").forEach(btn => {
-    btn.classList.remove("correct", "incorrect", "disabled");
-  });
-  disposeNextButton();
+function hideFeedback() {
+  feedbackBanner.hidden = true;
+  feedbackBanner.classList.remove("feedback-banner--correct", "feedback-banner--incorrect");
+  feedbackIcon.textContent = "";
+  feedbackText.textContent = "";
+  noteBox.hidden = true;
+  noteBox.innerHTML = "";
 }
 
-function renderNextButton(nextAction, anchorElement) {
+function renderNextButton(nextAction) {
   disposeNextButton();
   nextControls = document.createElement("div");
   nextControls.className = "next-controls";
@@ -210,12 +232,7 @@ function renderNextButton(nextAction, anchorElement) {
     { once: true },
   );
   nextControls.appendChild(button);
-
-  if (anchorElement && anchorElement.parentNode) {
-    anchorElement.insertAdjacentElement("afterend", nextControls);
-  } else {
-    quizContainer.appendChild(nextControls);
-  }
+  questionView.appendChild(nextControls);
 }
 
 function disposeNextButton() {
@@ -227,23 +244,25 @@ function disposeNextButton() {
 
 function submitAttempt() {
   quizStatus.textContent = "Submitting quiz...";
-  nextBtn.style.display = "none";
+  disposeNextButton();
 
-  fetch(`/api/quizzes/${currentQuiz.id}/attempts`, {
+  fetchJSON(`/api/quizzes/${currentQuiz.id}/attempts`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ responses }),
   })
-    .then(res => res.json())
     .then(payload => {
-      if (!payload || !payload.success) {
-        throw new Error(payload?.message || "Quiz submission failed.");
-      }
       renderResults(payload.data);
     })
     .catch(err => {
       console.error("❌ failed submitting quiz:", err);
-      quizStatus.textContent = err.message || "Unable to submit the quiz.";
+      quizStatus.textContent = err.message || "Unable to submit the quiz. Please try again.";
+      locked = true;
+      renderNextButton(
+        {
+          label: "Submit Quiz",
+          isFinal: true,
+        },
+      );
     });
 }
 
@@ -251,7 +270,9 @@ function renderResults(result) {
   quizStatus.textContent = "";
   const completedAt = formatTimestamp(result.completed_at);
 
-  quizContainer.innerHTML = `
+  questionView.hidden = true;
+  resultView.hidden = false;
+  resultView.innerHTML = `
     <h2>${currentQuiz.title} — Results</h2>
     <p class="result-score">Your score: ${result.score} / ${result.total_questions}</p>
     <p class="result-meta">Completed at: ${completedAt}</p>
@@ -277,7 +298,7 @@ function renderResults(result) {
     breakdownWrapper.appendChild(block);
   });
 
-  quizContainer.appendChild(breakdownWrapper);
+  resultView.appendChild(breakdownWrapper);
 
   const actionWrapper = document.createElement("div");
   actionWrapper.className = "quiz-actions";
@@ -297,7 +318,7 @@ function renderResults(result) {
 
   actionWrapper.appendChild(retryBtn);
   actionWrapper.appendChild(backBtn);
-  quizContainer.appendChild(actionWrapper);
+  resultView.appendChild(actionWrapper);
 }
 
 function getOptionText(question, optionId) {
@@ -319,6 +340,9 @@ function resetView() {
   quizButtonsContainer.style.display = "";
   quizContainer.style.display = "none";
   quizStatus.textContent = "";
+  questionView.hidden = false;
+  resultView.hidden = true;
+  resultView.innerHTML = "";
 }
 
 function formatTimestamp(isoString) {
