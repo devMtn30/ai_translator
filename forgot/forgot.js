@@ -7,17 +7,18 @@ document.getElementById("confirmBtn").addEventListener("click", async () => {
   }
 
   try {
-    const res = await fetch("https://pronocoach.duckdns.org/api/forgot", {
+    const res = await fetch("/api/forgot", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      credentials: "include",
       body: JSON.stringify({ email }),
     });
 
     const data = await res.json();
-    if (res.ok) {
+    if (data.success) {
       alert("✅ Password reset link sent! Please check your email.");
     } else {
-      alert(data.error || "Failed to send reset email.");
+      alert(data.message || data.error || "Failed to send reset email.");
     }
   } catch (err) {
     console.error(err);

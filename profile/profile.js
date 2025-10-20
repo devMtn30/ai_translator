@@ -14,47 +14,62 @@ closeBtn.addEventListener("click", () => {
 
 // 🔹 Load profile info
 document.addEventListener("DOMContentLoaded", async () => {
-  const studentId = localStorage.getItem("studentId");
-  if (!studentId) {
+  const stored = localStorage.getItem("authUser");
+  let authUser = null;
+  if (stored) {
+    try {
+      authUser = JSON.parse(stored);
+    } catch (err) {
+      console.warn("Failed to parse stored user:", err);
+    }
+  }
+
+  const email = authUser && authUser.email ? authUser.email : localStorage.getItem("email");
+  if (!email) {
     alert("Login required.");
     window.location.href = "../login/login.html";
     return;
   }
 
-  console.log("👉 Fetching studentId:", studentId);
-
   try {
-    const res = await fetch(`https://pronocoach.duckdns.org/api/profile/${studentId}`);
+    const res = await fetch(`/api/profile/${encodeURIComponent(email)}`, {
+      credentials: "include"
+    });
     const data = await res.json();
 
-    console.log("📌 Profile response:", data);
+    if (data.success && data.data && data.data.profile) {
+      const profile = data.data.profile;
+      localStorage.setItem("authUser", JSON.stringify(profile));
+      if (profile.student_id) {
+        localStorage.setItem("studentId", profile.student_id);
+      }
+      if (profile.email) {
+        localStorage.setItem("email", profile.email);
+      }
 
-    if (res.ok) {
-      // Top name/gender
-      document.querySelector(".player-name").textContent = data.firstname + " " + data.lastname;
-      document.querySelector(".player-gender").textContent = data.gender;
+      document.querySelector(".player-name").textContent =
+        `${profile.firstname || ""} ${profile.lastname || ""}`.trim();
+      document.querySelector(".player-gender").textContent = profile.gender || "—";
 
-      // Info card values
       const infoValues = document.querySelectorAll(".info-card .value");
-      infoValues[0].textContent = data.firstname;
-      infoValues[1].textContent = data.lastname;
-      infoValues[2].textContent = data.year + " Year";
-      infoValues[3].textContent = data.student_id;
-      infoValues[4].textContent = data.gender;
-      infoValues[5].textContent = data.email;
+      infoValues[0].textContent = profile.firstname || "—";
+      infoValues[1].textContent = profile.lastname || "—";
+      infoValues[2].textContent = profile.year ? `${profile.year} Year` : "—";
+      infoValues[3].textContent = profile.student_id || "—";
+      infoValues[4].textContent = profile.gender || "—";
+      infoValues[5].textContent = profile.email || email;
+    } else if (res.status === 403) {
+      alert("You can only view your own profile.");
+      window.location.href = "../main/main.html";
     } else {
-      alert(data.error || "Failed to load profile.");
+      alert(data.message || data.error || "Failed to load profile.");
     }
   } catch (err) {
     console.error("❌ Profile Error:", err);
     alert("Server connection failed.");
   }
-  
-  // profile.js 맨 아래
-document.getElementById("editBtn").addEventListener("click", () => {
-  // 필요에 따라 경로 조정 (예: /profile/edit.html)
-  window.location.href = "/profile/edit.html";
-});
 
-  
+  document.getElementById("editBtn").addEventListener("click", () => {
+    window.location.href = "/profile/edit.html";
+  });
 });

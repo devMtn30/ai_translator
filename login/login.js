@@ -1,28 +1,38 @@
 document.getElementById("loginForm").addEventListener("submit", async (e) => {
   e.preventDefault();
 
-  const studentId = document.getElementById("studentId").value.trim();
+  const identifier = document.getElementById("studentId").value.trim();
   const password = document.getElementById("password").value;
 
-  console.log("👉 Entered studentId:", studentId);
+  const payload = { password };
+  if (identifier.includes("@")) {
+    payload.email = identifier;
+  } else {
+    payload.student_id = identifier;
+  }
 
   try {
-    const res = await fetch("https://pronocoach.duckdns.org/api/login", {
+    const res = await fetch("/api/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ student_id: studentId, password: password })
+      credentials: "include",
+      body: JSON.stringify(payload)
     });
 
     const data = await res.json();
-    console.log("📌 Server response:", data);
-
-    if (res.ok) {
-      localStorage.setItem("studentId", studentId);
-      console.log("✅ Saved studentId:", localStorage.getItem("studentId"));
+    if (data.success) {
+      const user = data.data && data.data.user ? data.data.user : {};
+      localStorage.setItem("authUser", JSON.stringify(user));
+      if (user.student_id) {
+        localStorage.setItem("studentId", user.student_id);
+      }
+      if (user.email) {
+        localStorage.setItem("email", user.email);
+      }
       alert(data.message || "Login successful!");
       window.location.href = "../main/main.html";
     } else {
-      alert(data.error || "Login failed. Please check your Student ID and password.");
+      alert(data.message || data.error || "Login failed. Please check your credentials.");
     }
   } catch (err) {
     console.error("❌ Login Error:", err);

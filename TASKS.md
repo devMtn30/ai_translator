@@ -1,9 +1,9 @@
 # Task Backlog
 
 ## Authentication & User Profile
-- [ ] Implement MySQL-backed signup with email verification workflow, reusing `app.py` SMTP setup and persisting verification tokens.
-- [ ] Add password reset/change flow gated by email verification, updating relevant `forgot/` pages and API endpoints.
-- [ ] Extend profile APIs to support full CRUD on user fields and surface data in `profile/` screens; confirm DB writes succeed.
+- [x] Implement MySQL-backed signup with email verification workflow, reusing `app.py` SMTP setup and persisting verification tokens.
+- [x] Add password reset/change flow gated by email verification, updating relevant `forgot/` pages and API endpoints.
+- [x] Extend profile APIs to support full CRUD on user fields and surface data in `profile/` screens; confirm DB writes succeed.
 
 ## Reader Module
 - [ ] Keep existing PDF web-view UX while ensuring assets in `reader/books/` load reliably across devices.

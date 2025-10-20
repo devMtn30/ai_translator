@@ -23,27 +23,28 @@ document.getElementById("registerForm").addEventListener("submit", async functio
   }
 
   try {
-    const res = await fetch("https://pronocoach.duckdns.org/api/register", {
+    const res = await fetch("/api/register", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      credentials: "include",
       body: JSON.stringify({
-        firstname: firstname,
-        lastname: lastname,
+        firstname,
+        lastname,
         student_id: studentId,
-        email: email,
-        password: password,
-        year: year,
-        gender: gender
+        email,
+        password,
+        year,
+        gender
       })
     });
 
     const data = await res.json();
 
-if (res.ok) {
-  alert("✅ Verification email sent! Please check your inbox to verify your account.");
-  window.location.href = "../login/login.html";
-} else {
-      alert(data.error || "Registration failed. Please try again.");
+    if (data.success) {
+      alert("✅ Verification email sent! Please check your inbox to verify your account.");
+      window.location.href = "../login/login.html";
+    } else {
+      alert(data.message || data.error || "Registration failed. Please try again.");
     }
   } catch (err) {
     console.error("❌ Register Error:", err);

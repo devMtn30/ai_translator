@@ -1,25 +1,36 @@
 document.addEventListener("DOMContentLoaded", async () => {
-  // ✅ 로그인한 사용자의 학번(student_id) 가져오기
-  const studentId = localStorage.getItem("studentId");
-  if (!studentId) {
+  const stored = localStorage.getItem("authUser");
+  let authUser = null;
+  if (stored) {
+    try {
+      authUser = JSON.parse(stored);
+    } catch (err) {
+      console.warn("Failed to parse stored user:", err);
+    }
+  }
+
+  const email = authUser && authUser.email ? authUser.email : localStorage.getItem("email");
+  if (!email) {
     alert("Please log in first.");
     window.location.href = "/login/login.html";
     return;
   }
 
-  // ✅ 1. 현재 프로필 정보 불러오기
   try {
-    const res = await fetch(`https://pronocoach.duckdns.org/api/profile/${studentId}`);
+    const res = await fetch(`/api/profile/${encodeURIComponent(email)}`, {
+      credentials: "include"
+    });
     const data = await res.json();
 
-    if (res.ok) {
-      document.getElementById("firstname").value = data.firstname || "";
-      document.getElementById("lastname").value = data.lastname || "";
-      document.getElementById("year").value = data.year || "";
-      document.getElementById("student_id").value = data.student_id || "";
-      document.getElementById("gender").value = data.gender || "";
+    if (data.success && data.data && data.data.profile) {
+      const profile = data.data.profile;
+      document.getElementById("firstname").value = profile.firstname || "";
+      document.getElementById("lastname").value = profile.lastname || "";
+      document.getElementById("year").value = profile.year || "";
+      document.getElementById("student_id").value = profile.student_id || "";
+      document.getElementById("gender").value = profile.gender || "";
     } else {
-      alert("⚠️ Failed to load profile information.");
+      alert(data.message || data.error || "⚠️ Failed to load profile information.");
     }
   } catch (err) {
     console.error("❌ Error fetching profile:", err);
@@ -27,32 +38,40 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 });
 
-// ✅ 2. 수정 후 저장
 document.getElementById("editForm").addEventListener("submit", async (e) => {
   e.preventDefault();
 
   const payload = {
-    student_id: localStorage.getItem("studentId"),
     firstname: document.getElementById("firstname").value.trim(),
     lastname: document.getElementById("lastname").value.trim(),
     year: document.getElementById("year").value.trim(),
+    student_id: document.getElementById("student_id").value.trim(),
     gender: document.getElementById("gender").value.trim()
   };
 
   try {
-    const res = await fetch("https://pronocoach.duckdns.org/api/profile/update", {
+    const res = await fetch("/api/profile/update", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
+      credentials: "include",
       body: JSON.stringify(payload)
     });
 
     const data = await res.json();
 
-    if (data.success) {
-      alert("✅ Profile updated successfully!");
-      window.location.href = "./profile.html"; // ✅ 자동 이동
+    if (data.success && data.data && data.data.profile) {
+      const updatedProfile = data.data.profile;
+      localStorage.setItem("authUser", JSON.stringify(updatedProfile));
+      if (updatedProfile.student_id) {
+        localStorage.setItem("studentId", updatedProfile.student_id);
+      }
+      if (updatedProfile.email) {
+        localStorage.setItem("email", updatedProfile.email);
+      }
+      alert(data.message || "✅ Profile updated successfully!");
+      window.location.href = "./profile.html";
     } else {
-      alert("❌ Update failed: " + (data.message || "Unknown error"));
+      alert(data.message || data.error || "❌ Update failed.");
     }
   } catch (err) {
     console.error("❌ Update error:", err);
