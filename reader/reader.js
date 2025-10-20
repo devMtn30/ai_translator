@@ -9,6 +9,29 @@ const closeBtn = document.getElementById("closeBtn");
 menuBtn.addEventListener("click", () => sidebar.classList.add("open"));
 closeBtn.addEventListener("click", () => sidebar.classList.remove("open"));
 
+updateWelcomeText();
+
+async function updateWelcomeText() {
+  const label = document.querySelector(".welcome-text");
+  if (!label) return;
+
+  try {
+    const response = await fetch("/api/profile/me", { credentials: "include" });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok || payload?.success === false) {
+      const message = payload?.message || `Request failed (${response.status})`;
+      throw new Error(message);
+    }
+    const profile = payload.data?.profile || {};
+    const displayName = profile.firstname || profile.lastname || profile.email;
+    if (displayName) {
+      label.textContent = `Hi, ${displayName}`;
+    }
+  } catch (err) {
+    console.error("❌ failed to update welcome text:", err);
+  }
+}
+
 // "읽기" 버튼 클릭 시 책 열기
 document.querySelectorAll(".read-btn").forEach(btn => {
   btn.addEventListener("click", e => {

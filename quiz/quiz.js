@@ -29,6 +29,27 @@ let nextControls = null;
 
 const JSON_HEADERS = { "Content-Type": "application/json" };
 
+async function updateWelcomeText() {
+  const label = document.querySelector(".welcome-text");
+  if (!label) return;
+
+  try {
+    const response = await fetch("/api/profile/me", { credentials: "include" });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok || payload?.success === false) {
+      const message = payload?.message || `Request failed (${response.status})`;
+      throw new Error(message);
+    }
+    const profile = payload.data?.profile || {};
+    const displayName = profile.firstname || profile.lastname || profile.email;
+    if (displayName) {
+      label.textContent = `Hi, ${displayName}`;
+    }
+  } catch (err) {
+    console.error("❌ failed to update welcome text:", err);
+  }
+}
+
 function fetchJSON(url, options = {}) {
   const init = {
     credentials: "include",
@@ -51,6 +72,7 @@ function fetchJSON(url, options = {}) {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
+  updateWelcomeText();
   resetView();
   loadQuizzes();
 });
