@@ -137,6 +137,335 @@ def mark_user_verified(cursor, user_id, verified_at=None):
         pass
 
 
+DEFAULT_QUIZZES = [
+    {
+        "title": "Cebuano Basics",
+        "description": "Learn essential Cebuano vocabulary.",
+        "language": "Cebuano",
+        "questions": [
+            {
+                "prompt": "Gwapa",
+                "explanation": "The word 'Gwapa' is used to describe someone who is beautiful or attractive.",
+                "options": [
+                    {"text": "Maganda", "is_correct": True},
+                    {"text": "Masama", "is_correct": False},
+                    {"text": "Pangit", "is_correct": False},
+                    {"text": "Maliit", "is_correct": False},
+                ],
+            },
+            {
+                "prompt": "Dili",
+                "explanation": "'Dili' means 'no' or 'not' in Cebuano.",
+                "options": [
+                    {"text": "Oo", "is_correct": False},
+                    {"text": "Siguro", "is_correct": False},
+                    {"text": "Hindi", "is_correct": True},
+                    {"text": "Palagi", "is_correct": False},
+                ],
+            },
+            {
+                "prompt": "Maayong Buntag",
+                "explanation": "It is the Cebuano greeting for 'Good Morning'.",
+                "options": [
+                    {"text": "Magandang Araw", "is_correct": False},
+                    {"text": "Magandang Umaga", "is_correct": True},
+                    {"text": "Magandang Hapon", "is_correct": False},
+                    {"text": "Magandang Gabi", "is_correct": False},
+                ],
+            },
+            {
+                "prompt": "Lami",
+                "explanation": "'Lami' means 'delicious' or 'tasty' in Cebuano.",
+                "options": [
+                    {"text": "Maasim", "is_correct": False},
+                    {"text": "Mapait", "is_correct": False},
+                    {"text": "Maanghang", "is_correct": False},
+                    {"text": "Masarap", "is_correct": True},
+                ],
+            },
+            {
+                "prompt": "Mangaon ta",
+                "explanation": "'Mangaon ta' means 'Let's eat!'.",
+                "options": [
+                    {"text": "Kain tayo", "is_correct": True},
+                    {"text": "Alis tayo", "is_correct": False},
+                    {"text": "Busog pa ako", "is_correct": False},
+                    {"text": "Gutom na ako", "is_correct": False},
+                ],
+            },
+        ],
+    },
+    {
+        "title": "Tagalog Everyday",
+        "description": "Daily Tagalog words and phrases.",
+        "language": "Tagalog",
+        "questions": [
+            {
+                "prompt": "Maganda",
+                "explanation": "Means 'beautiful' or 'pretty' in Tagalog.",
+                "options": [
+                    {"text": "Beautiful", "is_correct": True},
+                    {"text": "Ugly", "is_correct": False},
+                    {"text": "Small", "is_correct": False},
+                    {"text": "Big", "is_correct": False},
+                ],
+            },
+            {
+                "prompt": "Kumusta",
+                "explanation": "'Kumusta' asks how someone is doing.",
+                "options": [
+                    {"text": "Hello", "is_correct": False},
+                    {"text": "Goodbye", "is_correct": False},
+                    {"text": "How are you", "is_correct": True},
+                    {"text": "Thank you", "is_correct": False},
+                ],
+            },
+            {
+                "prompt": "Salamat",
+                "explanation": "Expression of gratitude in Tagalog.",
+                "options": [
+                    {"text": "Please", "is_correct": False},
+                    {"text": "Sorry", "is_correct": False},
+                    {"text": "Thank you", "is_correct": True},
+                    {"text": "Excuse me", "is_correct": False},
+                ],
+            },
+            {
+                "prompt": "Bahay",
+                "explanation": "'Bahay' translates to house or home.",
+                "options": [
+                    {"text": "House", "is_correct": True},
+                    {"text": "Car", "is_correct": False},
+                    {"text": "School", "is_correct": False},
+                    {"text": "Food", "is_correct": False},
+                ],
+            },
+            {
+                "prompt": "Kain tayo",
+                "explanation": "An invitation meaning 'Let's eat'.",
+                "options": [
+                    {"text": "Let's eat", "is_correct": True},
+                    {"text": "Let's sleep", "is_correct": False},
+                    {"text": "Let's go", "is_correct": False},
+                    {"text": "Let's play", "is_correct": False},
+                ],
+            },
+        ],
+    },
+    {
+        "title": "Hiligaynon Hearts",
+        "description": "Affectionate terms from Hiligaynon.",
+        "language": "Hiligaynon",
+        "questions": [
+            {
+                "prompt": "Palangga",
+                "explanation": "Means 'beloved' or 'my love'.",
+                "options": [
+                    {"text": "Kaibigan", "is_correct": False},
+                    {"text": "Minamahal", "is_correct": True},
+                    {"text": "Bata", "is_correct": False},
+                    {"text": "Damit", "is_correct": False},
+                ],
+            },
+            {
+                "prompt": "Amigo",
+                "explanation": "Borrowed from Spanish, means male friend.",
+                "options": [
+                    {"text": "Kaibigan", "is_correct": True},
+                    {"text": "Tubig", "is_correct": False},
+                    {"text": "Salamat", "is_correct": False},
+                    {"text": "Masaya", "is_correct": False},
+                ],
+            },
+            {
+                "prompt": "Pagkaon",
+                "explanation": "Refers to food, from root word 'kaon'.",
+                "options": [
+                    {"text": "Balay", "is_correct": False},
+                    {"text": "Tulog", "is_correct": False},
+                    {"text": "Bayo", "is_correct": False},
+                    {"text": "Pagkain", "is_correct": True},
+                ],
+            },
+            {
+                "prompt": "Asta sa liwat",
+                "explanation": "Means 'See you again'.",
+                "options": [
+                    {"text": "Hindi", "is_correct": False},
+                    {"text": "Maganda Gabi", "is_correct": False},
+                    {"text": "Hanggang sa muli", "is_correct": True},
+                    {"text": "Oo", "is_correct": False},
+                ],
+            },
+            {
+                "prompt": "Balay",
+                "explanation": "Means 'house' or 'home'.",
+                "options": [
+                    {"text": "Bahay", "is_correct": True},
+                    {"text": "Maganda", "is_correct": False},
+                    {"text": "Salamat", "is_correct": False},
+                    {"text": "Kaibigan", "is_correct": False},
+                ],
+            },
+        ],
+    },
+    {
+        "title": "Bicolano Expressions",
+        "description": "Common expressions from the Bicol region.",
+        "language": "Bicolano",
+        "questions": [
+            {
+                "prompt": "Marhay na aldaw",
+                "explanation": "A greeting meaning 'Good day'.",
+                "options": [
+                    {"text": "Magandang umaga", "is_correct": False},
+                    {"text": "Magandang hapon", "is_correct": False},
+                    {"text": "Magandang gabi", "is_correct": False},
+                    {"text": "Magandang araw", "is_correct": True},
+                ],
+            },
+            {
+                "prompt": "Daraga",
+                "explanation": "Means lady or unmarried young woman.",
+                "options": [
+                    {"text": "Babae o dalaga", "is_correct": True},
+                    {"text": "Patawad", "is_correct": False},
+                    {"text": "Kaibigan", "is_correct": False},
+                    {"text": "Salamat", "is_correct": False},
+                ],
+            },
+            {
+                "prompt": "Pangadyi",
+                "explanation": "Refers to prayer.",
+                "options": [
+                    {"text": "Pagkain", "is_correct": False},
+                    {"text": "Panalangin", "is_correct": True},
+                    {"text": "Kaibigan", "is_correct": False},
+                    {"text": "Bahay", "is_correct": False},
+                ],
+            },
+            {
+                "prompt": "Harayo",
+                "explanation": "Means far or distant.",
+                "options": [
+                    {"text": "Malayo", "is_correct": True},
+                    {"text": "Malapit", "is_correct": False},
+                    {"text": "Sa loob", "is_correct": False},
+                    {"text": "Sa labas", "is_correct": False},
+                ],
+            },
+            {
+                "prompt": "Kaigwa",
+                "explanation": "Means friend.",
+                "options": [
+                    {"text": "Kapitbahay", "is_correct": False},
+                    {"text": "Estranghero", "is_correct": False},
+                    {"text": "Kaibigan", "is_correct": True},
+                    {"text": "Kaaway", "is_correct": False},
+                ],
+            },
+        ],
+    },
+    {
+        "title": "Kapampangan Greetings",
+        "description": "Warm greetings from the Kapampangan language.",
+        "language": "Kapampangan",
+        "questions": [
+            {
+                "prompt": "Mayaus",
+                "explanation": "Means 'beautiful' in Kapampangan.",
+                "options": [
+                    {"text": "Matalino", "is_correct": False},
+                    {"text": "Mabait", "is_correct": False},
+                    {"text": "Maganda", "is_correct": True},
+                    {"text": "Malakas", "is_correct": False},
+                ],
+            },
+            {
+                "prompt": "Mayap a bengi",
+                "explanation": "Means 'good evening'.",
+                "options": [
+                    {"text": "Magandang umaga", "is_correct": False},
+                    {"text": "Magandang hapon", "is_correct": False},
+                    {"text": "Magandang gabi", "is_correct": True},
+                    {"text": "Paalam", "is_correct": False},
+                ],
+            },
+            {
+                "prompt": "Dakal a salamat",
+                "explanation": "Means 'thank you very much'.",
+                "options": [
+                    {"text": "Magandang umaga", "is_correct": False},
+                    {"text": "Maraming salamat", "is_correct": True},
+                    {"text": "Paalam", "is_correct": False},
+                    {"text": "Pakiusap", "is_correct": False},
+                ],
+            },
+            {
+                "prompt": "Balen",
+                "explanation": "Means 'house'.",
+                "options": [
+                    {"text": "Lalaki", "is_correct": False},
+                    {"text": "Kaibigan", "is_correct": False},
+                    {"text": "Pamilya", "is_correct": False},
+                    {"text": "Bahay", "is_correct": True},
+                ],
+            },
+            {
+                "prompt": "Mangan tamu",
+                "explanation": "Means 'let's eat'.",
+                "options": [
+                    {"text": "Kain na tayo", "is_correct": True},
+                    {"text": "Matulog na tayo", "is_correct": False},
+                    {"text": "Tara na", "is_correct": False},
+                    {"text": "Tara laro tayo", "is_correct": False},
+                ],
+            },
+        ],
+    },
+]
+
+
+def normalize_quiz_questions(questions):
+    if not isinstance(questions, list) or not questions:
+        raise ValueError("At least one question is required.")
+
+    normalized = []
+    for index, question in enumerate(questions, start=1):
+        prompt = (question.get("prompt") or "").strip()
+        if not prompt:
+            raise ValueError(f"Question {index} requires a prompt.")
+
+        raw_options = question.get("options") or []
+        filtered_options = []
+        for option in raw_options:
+            text = (option.get("text") or "").strip()
+            if not text:
+                continue
+            filtered_options.append(
+                {
+                    "text": text,
+                    "is_correct": bool(option.get("is_correct")),
+                }
+            )
+
+        if len(filtered_options) < 2:
+            raise ValueError(f"Question {index} requires at least two options.")
+
+        if not any(option["is_correct"] for option in filtered_options):
+            filtered_options[0]["is_correct"] = True
+
+        normalized.append(
+            {
+                "prompt": prompt,
+                "explanation": (question.get("explanation") or "").strip() or None,
+                "options": filtered_options,
+            }
+        )
+
+    return normalized
+
+
 TABLE_DEFINITIONS = [
     """
     CREATE TABLE IF NOT EXISTS users (
@@ -207,6 +536,74 @@ TABLE_DEFINITIONS = [
             REFERENCES users(id) ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     """,
+    """
+    CREATE TABLE IF NOT EXISTS quizzes (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        title VARCHAR(255) NOT NULL,
+        description VARCHAR(500),
+        language VARCHAR(50),
+        is_active TINYINT(1) DEFAULT 1,
+        created_by INT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_quizzes_active (is_active)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    """,
+    """
+    CREATE TABLE IF NOT EXISTS quiz_questions (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        quiz_id INT NOT NULL,
+        prompt TEXT NOT NULL,
+        explanation TEXT,
+        order_index INT DEFAULT 0,
+        CONSTRAINT fk_quiz_questions_quiz FOREIGN KEY (quiz_id)
+            REFERENCES quizzes(id) ON DELETE CASCADE,
+        INDEX idx_questions_quiz (quiz_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    """,
+    """
+    CREATE TABLE IF NOT EXISTS quiz_options (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        question_id INT NOT NULL,
+        text VARCHAR(255) NOT NULL,
+        is_correct TINYINT(1) DEFAULT 0,
+        CONSTRAINT fk_quiz_options_question FOREIGN KEY (question_id)
+            REFERENCES quiz_questions(id) ON DELETE CASCADE,
+        INDEX idx_options_question (question_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    """,
+    """
+    CREATE TABLE IF NOT EXISTS quiz_attempts (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        quiz_id INT NOT NULL,
+        user_id INT NOT NULL,
+        score INT DEFAULT 0,
+        total_questions INT DEFAULT 0,
+        completed_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        CONSTRAINT fk_attempt_quiz FOREIGN KEY (quiz_id)
+            REFERENCES quizzes(id) ON DELETE CASCADE,
+        CONSTRAINT fk_attempt_user FOREIGN KEY (user_id)
+            REFERENCES users(id) ON DELETE CASCADE,
+        INDEX idx_attempts_user (user_id),
+        INDEX idx_attempts_quiz (quiz_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    """,
+    """
+    CREATE TABLE IF NOT EXISTS quiz_attempt_answers (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        attempt_id INT NOT NULL,
+        question_id INT NOT NULL,
+        option_id INT NULL,
+        is_correct TINYINT(1) DEFAULT 0,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        CONSTRAINT fk_attempt_answers_attempt FOREIGN KEY (attempt_id)
+            REFERENCES quiz_attempts(id) ON DELETE CASCADE,
+        CONSTRAINT fk_attempt_answers_question FOREIGN KEY (question_id)
+            REFERENCES quiz_questions(id) ON DELETE CASCADE,
+        CONSTRAINT fk_attempt_answers_option FOREIGN KEY (option_id)
+            REFERENCES quiz_options(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    """,
 ]
 
 
@@ -250,6 +647,45 @@ def ensure_reading_progress_schema(cursor):
         pass
 
 
+def seed_default_quizzes(cursor):
+    try:
+        cursor.execute("SELECT COUNT(*) FROM quizzes")
+        existing = cursor.fetchone()
+    except mysql.connector.Error:
+        return
+
+    count = existing[0] if existing else 0
+    if count:
+        return
+
+    for quiz in DEFAULT_QUIZZES:
+        cursor.execute(
+            """
+            INSERT INTO quizzes (title, description, language, is_active)
+            VALUES (%s, %s, %s, %s)
+            """,
+            (quiz["title"], quiz.get("description"), quiz.get("language"), 1),
+        )
+        quiz_id = cursor.lastrowid
+        for index, question in enumerate(quiz.get("questions", []), start=1):
+            cursor.execute(
+                """
+                INSERT INTO quiz_questions (quiz_id, prompt, explanation, order_index)
+                VALUES (%s, %s, %s, %s)
+                """,
+                (quiz_id, question["prompt"], question.get("explanation"), index),
+            )
+            question_id = cursor.lastrowid
+            for option in question.get("options", []):
+                cursor.execute(
+                    """
+                    INSERT INTO quiz_options (question_id, text, is_correct)
+                    VALUES (%s, %s, %s)
+                    """,
+                    (question_id, option["text"], 1 if option.get("is_correct") else 0),
+                )
+
+
 def initialize_database():
     try:
         conn = get_db_connection()
@@ -262,6 +698,7 @@ def initialize_database():
         for ddl in TABLE_DEFINITIONS:
             cursor.execute(ddl)
         ensure_reading_progress_schema(cursor)
+        seed_default_quizzes(cursor)
         conn.commit()
     except mysql.connector.Error as exc:
         conn.rollback()
@@ -302,10 +739,12 @@ def fetch_reading_history_entries(cursor, user_id):
 def fetch_quiz_history_entries(cursor, user_id):
     cursor.execute(
         """
-        SELECT quiz_title, score, total_questions, completed_at
-        FROM quiz_history
-        WHERE user_id = %s
-        ORDER BY completed_at DESC
+        SELECT qa.id, qa.quiz_id, qa.score, qa.total_questions, qa.completed_at,
+               q.title AS quiz_title
+        FROM quiz_attempts qa
+        JOIN quizzes q ON q.id = qa.quiz_id
+        WHERE qa.user_id = %s
+        ORDER BY qa.completed_at DESC
         """,
         (user_id,),
     )
@@ -321,9 +760,188 @@ def fetch_quiz_history_entries(cursor, user_id):
                 "total_questions": row.get("total_questions"),
                 "completed_at": completed_str,
                 "occurred_at": completed_str,
+                "quiz_id": row.get("quiz_id"),
+                "attempt_id": row.get("id"),
             }
         )
     return entries
+
+
+def fetch_quiz_list(cursor, include_inactive=False):
+    query = """
+        SELECT q.id, q.title, q.description, q.language, q.is_active,
+               (SELECT COUNT(*) FROM quiz_questions qq WHERE qq.quiz_id = q.id) AS question_count
+        FROM quizzes q
+    """
+    params = []
+    if not include_inactive:
+        query += " WHERE q.is_active = 1"
+    query += " ORDER BY q.title ASC"
+    cursor.execute(query, params)
+    rows = cursor.fetchall()
+    quizzes = []
+    for row in rows:
+        quizzes.append(
+            {
+                "id": row.get("id"),
+                "title": row.get("title"),
+                "description": row.get("description"),
+                "language": row.get("language"),
+                "is_active": bool(row.get("is_active")),
+                "question_count": row.get("question_count") or 0,
+            }
+        )
+    return quizzes
+
+
+def fetch_quiz_detail(cursor, quiz_id, include_correct=False):
+    cursor.execute(
+        """
+        SELECT id, title, description, language, is_active
+        FROM quizzes
+        WHERE id = %s
+        """,
+        (quiz_id,),
+    )
+    quiz = cursor.fetchone()
+    if not quiz:
+        return None
+
+    cursor.execute(
+        """
+        SELECT id, prompt, explanation, order_index
+        FROM quiz_questions
+        WHERE quiz_id = %s
+        ORDER BY order_index ASC, id ASC
+        """,
+        (quiz_id,),
+    )
+    questions = cursor.fetchall()
+    question_ids = [question["id"] for question in questions]
+    options_by_question = {question_id: [] for question_id in question_ids}
+    correct_option_by_question = {}
+
+    if question_ids:
+        placeholders = ", ".join(["%s"] * len(question_ids))
+        cursor.execute(
+            f"""
+            SELECT id, question_id, text, is_correct
+            FROM quiz_options
+            WHERE question_id IN ({placeholders})
+            ORDER BY id ASC
+            """,
+            question_ids,
+        )
+        for option in cursor.fetchall():
+            question_id = option["question_id"]
+            option_payload = {
+                "id": option["id"],
+                "text": option["text"],
+            }
+            if include_correct:
+                option_payload["is_correct"] = bool(option.get("is_correct"))
+            options_by_question.setdefault(question_id, []).append(option_payload)
+            if option.get("is_correct"):
+                correct_option_by_question[question_id] = option["id"]
+
+    payload_questions = []
+    for question in questions:
+        entry = {
+            "id": question["id"],
+            "prompt": question["prompt"],
+            "explanation": question.get("explanation"),
+            "order_index": question.get("order_index"),
+            "options": options_by_question.get(question["id"], []),
+        }
+        if include_correct:
+            entry["correct_option_id"] = correct_option_by_question.get(question["id"])
+        payload_questions.append(entry)
+
+    return {
+        "id": quiz["id"],
+        "title": quiz["title"],
+        "description": quiz.get("description"),
+        "language": quiz.get("language"),
+        "is_active": bool(quiz.get("is_active")),
+        "questions": payload_questions,
+    }
+
+
+def grade_quiz_attempt(cursor, quiz_id, responses):
+    cursor.execute(
+        "SELECT id, title FROM quizzes WHERE id = %s",
+        (quiz_id,),
+    )
+    quiz = cursor.fetchone()
+    if not quiz:
+        return None, None
+
+    cursor.execute(
+        """
+        SELECT id, prompt, explanation
+        FROM quiz_questions
+        WHERE quiz_id = %s
+        ORDER BY order_index ASC, id ASC
+        """,
+        (quiz_id,),
+    )
+    questions = cursor.fetchall()
+    if not questions:
+        return quiz, {"score": 0, "total_questions": 0, "breakdown": [], "responses": []}
+
+    question_ids = [question["id"] for question in questions]
+    placeholders = ", ".join(["%s"] * len(question_ids))
+    cursor.execute(
+        f"""
+        SELECT id, question_id, text, is_correct
+        FROM quiz_options
+        WHERE question_id IN ({placeholders})
+        """,
+        question_ids,
+    )
+    options = cursor.fetchall()
+
+    options_by_id = {opt["id"]: opt for opt in options}
+    correct_option_by_question = {}
+    for opt in options:
+        if opt.get("is_correct"):
+            correct_option_by_question[opt["question_id"]] = opt["id"]
+
+    response_map = {}
+    for response in responses:
+        qid = response.get("question_id")
+        oid = response.get("option_id")
+        option = options_by_id.get(oid)
+        if qid and option and option.get("question_id") == qid:
+            response_map[qid] = oid
+
+    score = 0
+    breakdown = []
+    for question in questions:
+        qid = question["id"]
+        correct_option_id = correct_option_by_question.get(qid)
+        selected_option_id = response_map.get(qid)
+        is_correct = selected_option_id == correct_option_id and correct_option_id is not None
+        if is_correct:
+            score += 1
+        breakdown.append(
+            {
+                "question_id": qid,
+                "prompt": question["prompt"],
+                "explanation": question.get("explanation"),
+                "selected_option_id": selected_option_id,
+                "correct_option_id": correct_option_id,
+                "is_correct": is_correct,
+            }
+        )
+
+    return quiz, {
+        "score": score,
+        "total_questions": len(questions),
+        "breakdown": breakdown,
+        "questions": questions,
+        "options_by_id": options_by_id,
+    }
 
 
 def serialize_user(row):
@@ -767,6 +1385,275 @@ def update_profile():
         conn.close()
 
 
+@app.route("/api/quizzes", methods=["GET", "POST"])
+def quizzes_collection():
+    if request.method == "GET":
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        try:
+            quizzes = fetch_quiz_list(cursor)
+            return json_response(True, "Quizzes fetched.", {"quizzes": quizzes})
+        finally:
+            cursor.close()
+            conn.close()
+
+    # POST
+    user_id = session.get("user_id")
+    if not user_id:
+        return json_response(False, "Authentication required.", status=401)
+
+    data = request.get_json() or {}
+    title = (data.get("title") or "").strip()
+    if not title:
+        return json_response(False, "Quiz title is required.", status=400)
+
+    try:
+        normalized_questions = normalize_quiz_questions(data.get("questions"))
+    except ValueError as exc:
+        return json_response(False, str(exc), status=400)
+
+    description = (data.get("description") or "").strip() or None
+    language = (data.get("language") or "").strip() or None
+    is_active = 1 if data.get("is_active", True) else 0
+
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+    try:
+        cursor.execute(
+            """
+            INSERT INTO quizzes (title, description, language, is_active, created_by)
+            VALUES (%s, %s, %s, %s, %s)
+            """,
+            (title, description, language, is_active, user_id),
+        )
+        quiz_id = cursor.lastrowid
+
+        for index, question in enumerate(normalized_questions, start=1):
+            cursor.execute(
+                """
+                INSERT INTO quiz_questions (quiz_id, prompt, explanation, order_index)
+                VALUES (%s, %s, %s, %s)
+                """,
+                (quiz_id, question["prompt"], question.get("explanation"), index),
+            )
+            question_id = cursor.lastrowid
+            for option in question["options"]:
+                cursor.execute(
+                    """
+                    INSERT INTO quiz_options (question_id, text, is_correct)
+                    VALUES (%s, %s, %s)
+                    """,
+                    (question_id, option["text"], 1 if option["is_correct"] else 0),
+                )
+
+        conn.commit()
+        quiz = fetch_quiz_detail(cursor, quiz_id, include_correct=True)
+        return json_response(True, "Quiz created.", {"quiz": quiz}, status=201)
+    except mysql.connector.Error as exc:
+        conn.rollback()
+        return json_response(False, f"Database error: {exc}", status=500)
+    finally:
+        cursor.close()
+        conn.close()
+
+
+@app.route("/api/quizzes/<int:quiz_id>", methods=["GET", "PUT", "DELETE"])
+def quiz_resource(quiz_id):
+    if request.method == "GET":
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        try:
+            quiz = fetch_quiz_detail(cursor, quiz_id, include_correct=True)
+            if not quiz:
+                return json_response(False, "Quiz not found.", status=404)
+            return json_response(True, "Quiz fetched.", {"quiz": quiz})
+        finally:
+            cursor.close()
+            conn.close()
+
+    if not session.get("user_id"):
+        return json_response(False, "Authentication required.", status=401)
+
+    data = request.get_json() or {}
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    try:
+        cursor.execute("SELECT id FROM quizzes WHERE id = %s", (quiz_id,))
+        if not cursor.fetchone():
+            return json_response(False, "Quiz not found.", status=404)
+
+        if request.method == "DELETE":
+            cursor.execute("DELETE FROM quizzes WHERE id = %s", (quiz_id,))
+            conn.commit()
+            return json_response(True, "Quiz deleted.")
+
+        # PUT
+        title = data.get("title")
+        description = data.get("description") if "description" in data else None
+        language = data.get("language") if "language" in data else None
+        is_active = data.get("is_active") if "is_active" in data else None
+
+        update_fields = []
+        values = []
+        if title is not None:
+            title = title.strip()
+            if not title:
+                return json_response(False, "Quiz title cannot be empty.", status=400)
+            update_fields.append("title = %s")
+            values.append(title)
+        if description is not None:
+            description = description.strip() or None
+            update_fields.append("description = %s")
+            values.append(description)
+        if language is not None:
+            language = language.strip() or None
+            update_fields.append("language = %s")
+            values.append(language)
+        if is_active is not None:
+            update_fields.append("is_active = %s")
+            values.append(1 if is_active else 0)
+
+        if update_fields:
+            values.append(quiz_id)
+            cursor.execute(
+                f"UPDATE quizzes SET {', '.join(update_fields)} WHERE id = %s",
+                tuple(values),
+            )
+
+        if "questions" in data:
+            try:
+                normalized_questions = normalize_quiz_questions(data.get("questions"))
+            except ValueError as exc:
+                conn.rollback()
+                return json_response(False, str(exc), status=400)
+
+            cursor.execute("DELETE FROM quiz_questions WHERE quiz_id = %s", (quiz_id,))
+            for index, question in enumerate(normalized_questions, start=1):
+                cursor.execute(
+                    """
+                    INSERT INTO quiz_questions (quiz_id, prompt, explanation, order_index)
+                    VALUES (%s, %s, %s, %s)
+                    """,
+                    (quiz_id, question["prompt"], question.get("explanation"), index),
+                )
+                question_id = cursor.lastrowid
+                for option in question["options"]:
+                    cursor.execute(
+                        """
+                        INSERT INTO quiz_options (question_id, text, is_correct)
+                        VALUES (%s, %s, %s)
+                        """,
+                        (question_id, option["text"], 1 if option["is_correct"] else 0),
+                    )
+
+        conn.commit()
+        updated_quiz = fetch_quiz_detail(cursor, quiz_id, include_correct=True)
+        return json_response(True, "Quiz updated.", {"quiz": updated_quiz})
+    except mysql.connector.Error as exc:
+        conn.rollback()
+        return json_response(False, f"Database error: {exc}", status=500)
+    finally:
+        cursor.close()
+        conn.close()
+
+
+@app.route("/api/quizzes/<int:quiz_id>/attempts", methods=["POST"])
+def submit_quiz_attempt(quiz_id):
+    user_id = session.get("user_id")
+    if not user_id:
+        return json_response(False, "Authentication required.", status=401)
+
+    data = request.get_json() or {}
+    responses = data.get("responses") or []
+
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+    try:
+        quiz, grading = grade_quiz_attempt(cursor, quiz_id, responses)
+        if quiz is None:
+            return json_response(False, "Quiz not found.", status=404)
+        if grading["total_questions"] == 0:
+            return json_response(False, "Quiz has no questions.", status=400)
+
+        timestamp = datetime.utcnow()
+        cursor.execute(
+            """
+            INSERT INTO quiz_attempts (quiz_id, user_id, score, total_questions, completed_at)
+            VALUES (%s, %s, %s, %s, %s)
+            """,
+            (quiz_id, user_id, grading["score"], grading["total_questions"], timestamp),
+        )
+        attempt_id = cursor.lastrowid
+
+        for item in grading["breakdown"]:
+            cursor.execute(
+                """
+                INSERT INTO quiz_attempt_answers (attempt_id, question_id, option_id, is_correct)
+                VALUES (%s, %s, %s, %s)
+                """,
+                (
+                    attempt_id,
+                    item["question_id"],
+                    item["selected_option_id"],
+                    1 if item["is_correct"] else 0,
+                ),
+            )
+
+        cursor.execute(
+            """
+            INSERT INTO quiz_history (user_id, quiz_title, score, total_questions, completed_at)
+            VALUES (%s, %s, %s, %s, %s)
+            """,
+            (user_id, quiz["title"], grading["score"], grading["total_questions"], timestamp),
+        )
+
+        conn.commit()
+        payload = {
+            "quiz_id": quiz_id,
+            "quiz_title": quiz["title"],
+            "score": grading["score"],
+            "total_questions": grading["total_questions"],
+            "completed_at": isoformat_utc(timestamp),
+            "breakdown": grading["breakdown"],
+        }
+        return json_response(True, "Quiz submitted.", payload)
+    except mysql.connector.Error as exc:
+        conn.rollback()
+        return json_response(False, f"Database error: {exc}", status=500)
+    finally:
+        cursor.close()
+        conn.close()
+
+
+@app.route("/api/history/quizzes", methods=["GET"])
+def quiz_history():
+    user_id = session.get("user_id")
+    if not user_id:
+        return json_response(False, "Authentication required.", status=401)
+
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+    try:
+        entries = fetch_quiz_history_entries(cursor, user_id)
+        history = []
+        for entry in entries:
+            history.append(
+                {
+                    "quiz_title": entry.get("quiz_title"),
+                    "score": entry.get("score"),
+                    "total_questions": entry.get("total_questions"),
+                    "completed_at": entry.get("completed_at"),
+                    "quiz_id": entry.get("quiz_id"),
+                    "attempt_id": entry.get("attempt_id"),
+                }
+            )
+        return json_response(True, "Quiz history fetched.", {"history": history})
+    finally:
+        cursor.close()
+        conn.close()
+
+
 @app.route("/api/save_progress", methods=["POST"])
 def save_progress():
     user_id = session.get("user_id")
@@ -804,52 +1691,7 @@ def save_progress():
 
 @app.route("/api/history/quiz", methods=["POST"])
 def log_quiz_history():
-    user_id = session.get("user_id")
-    if not user_id:
-        return json_response(False, "Authentication required.", status=401)
-
-    data = request.get_json() or {}
-    quiz_title = data.get("quiz_title")
-    score = data.get("score")
-    total_questions = data.get("total_questions")
-
-    missing = [field for field in ("quiz_title", "score", "total_questions") if data.get(field) is None]
-    if missing:
-        return json_response(False, f"Missing fields: {', '.join(missing)}", status=400)
-    if not str(quiz_title).strip():
-        return json_response(False, "Quiz title is required.", status=400)
-    try:
-        score = int(score)
-        total_questions = int(total_questions)
-    except (TypeError, ValueError):
-        return json_response(False, "Score and total_questions must be integers.", status=400)
-
-    timestamp = datetime.utcnow()
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    try:
-        cursor.execute(
-            """
-            INSERT INTO quiz_history (user_id, quiz_title, score, total_questions, completed_at)
-            VALUES (%s, %s, %s, %s, %s)
-            """,
-            (user_id, quiz_title, score, total_questions, timestamp),
-        )
-        conn.commit()
-        entry = {
-            "type": "quiz",
-            "quiz_title": quiz_title,
-            "score": score,
-            "total_questions": total_questions,
-            "completed_at": isoformat_utc(timestamp),
-        }
-        return json_response(True, "Quiz activity recorded.", {"entry": entry})
-    except mysql.connector.Error as exc:  # pragma: no cover - depends on DB
-        conn.rollback()
-        return json_response(False, f"Database error: {exc}", status=500)
-    finally:
-        cursor.close()
-        conn.close()
+    return json_response(False, "Deprecated endpoint. Use POST /api/quizzes/<id>/attempts.", status=410)
 
 
 @app.route("/api/get_progress", methods=["GET"])

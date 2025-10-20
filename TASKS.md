@@ -33,8 +33,8 @@ Translation & AI Voice Input
 
 ## Quiz System
 
-* [ ] Build REST endpoints for 4-choice quizzes (CRUD) and client logic within `quiz/` for question retrieval, answer submission, and scoring.
-* [ ] Persist quiz attempts and scores per user; surface aggregated history under the History tab with filtering.
+* [x] Build REST endpoints for 4-choice quizzes (CRUD) and client logic within `quiz/` for question retrieval, answer submission, and scoring.
+* [x] Persist quiz attempts and scores per user; surface aggregated history under the History tab with filtering.
 
 ---
 

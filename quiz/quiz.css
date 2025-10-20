@@ -90,6 +90,13 @@ body {
   width: 60%;
 }
 
+.quiz-status {
+  margin-top: 16px;
+  text-align: center;
+  font-size: 16px;
+  color: #fefefe;
+}
+
 /* Quiz Container Styles */
 #quizContainer {
   display: flex;
@@ -141,6 +148,10 @@ body {
   transform: none;
 }
 
+.option-btn.disabled {
+  opacity: 0.75;
+}
+
 .correct {
   background: #4CAF50 !important;
   color: white !important;
@@ -151,20 +162,40 @@ body {
   color: white !important;
 }
 
+.next-controls {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  margin-top: 18px;
+}
+
 .next-btn {
-  background: #fff;
-  color: #000;
+  background: linear-gradient(135deg, #645bff, #8b5cf6);
+  color: #fff;
   font-size: 18px;
   font-weight: 600;
   border: none;
   border-radius: 12px;
   padding: 15px 30px;
   cursor: pointer;
-  transition: background 0.2s;
+  transition: transform 0.2s, box-shadow 0.2s, background 0.2s;
+  box-shadow: 0 10px 25px rgba(63, 56, 184, 0.35);
 }
 
 .next-btn:hover {
-  background: #f0f0f0;
+  transform: translateY(-2px);
+  box-shadow: 0 12px 30px rgba(99, 102, 241, 0.45);
+}
+
+.next-btn:disabled {
+  opacity: 0.75;
+  cursor: wait;
+  transform: none;
+  box-shadow: none;
+}
+
+.next-btn--progress {
+  min-width: 200px;
 }
 
 .trivia-box {
@@ -198,6 +229,72 @@ body {
 }
 .feedback .icon.check {
   color: #4CAF50; /* green */
+}
+
+.breakdown {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  margin-top: 24px;
+}
+
+.breakdown__item {
+  background: #fff;
+  color: #000;
+  padding: 14px;
+  border-radius: 12px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.breakdown__item h3 {
+  margin: 0 0 8px;
+  font-size: 18px;
+}
+
+.breakdown__item p {
+  margin: 4px 0;
+  font-size: 14px;
+}
+
+.breakdown__note {
+  font-style: italic;
+  color: #1f2937;
+}
+
+.quiz-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-top: 24px;
+}
+
+.next-btn.secondary {
+  background: transparent;
+  color: #fff;
+  border: 2px solid #fff;
+  box-shadow: none;
+}
+
+.next-btn.secondary:hover {
+  background: rgba(255, 255, 255, 0.15);
+  transform: none;
+}
+
+.result-score {
+  font-size: 24px;
+  font-weight: 700;
+  margin: 12px 0 4px;
+  text-align: center;
+}
+
+.result-meta {
+  font-size: 14px;
+  opacity: 0.85;
+  margin-bottom: 8px;
+  text-align: center;
 }
 .feedback .icon.cross {
   color: #f44336; /* red */
