@@ -15,6 +15,8 @@ const wordDisplay = document.getElementById("wordDisplay");
 const optionsContainer = document.getElementById("optionsContainer");
 const title = document.querySelector(".title");
 const subtitle = document.querySelector(".subtitle");
+const navAvatar = document.querySelector(".profile-icon");
+const DEFAULT_AVATAR = "../assets/avatar.png";
 
 menuBtn.addEventListener("click", () => sidebar.classList.add("open"));
 closeBtn.addEventListener("click", () => sidebar.classList.remove("open"));
@@ -44,6 +46,9 @@ async function updateWelcomeText() {
     const displayName = profile.firstname || profile.lastname || profile.email;
     if (displayName) {
       label.textContent = `Hi, ${displayName}`;
+    }
+    if (navAvatar) {
+      navAvatar.src = profile.profile_image_url || DEFAULT_AVATAR;
     }
   } catch (err) {
     console.error("❌ failed to update welcome text:", err);

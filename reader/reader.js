@@ -11,6 +11,9 @@ closeBtn.addEventListener("click", () => sidebar.classList.remove("open"));
 
 updateWelcomeText();
 
+const navAvatar = document.querySelector(".profile-icon");
+const DEFAULT_AVATAR = "../assets/avatar.png";
+
 async function updateWelcomeText() {
   const label = document.querySelector(".welcome-text");
   if (!label) return;
@@ -26,6 +29,9 @@ async function updateWelcomeText() {
     const displayName = profile.firstname || profile.lastname || profile.email;
     if (displayName) {
       label.textContent = `Hi, ${displayName}`;
+    }
+    if (navAvatar) {
+      navAvatar.src = profile.profile_image_url || DEFAULT_AVATAR;
     }
   } catch (err) {
     console.error("❌ failed to update welcome text:", err);

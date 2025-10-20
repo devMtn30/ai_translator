@@ -13,6 +13,8 @@ const elements = {
   student: document.querySelector("[data-profile-student]"),
   genderDetail: document.querySelector("[data-profile-gender-detail]"),
   email: document.querySelector("[data-profile-email]"),
+  avatar: document.querySelector("[data-profile-avatar]"),
+  headerIcon: document.querySelector(".profile-icon"),
 };
 
 const editBtn = document.getElementById("editBtn");
@@ -21,6 +23,14 @@ const editCloseBtn = document.getElementById("editCloseBtn");
 const editCancelBtn = document.getElementById("editCancelBtn");
 const editForm = document.getElementById("editForm");
 const editSubmitBtn = document.getElementById("editSubmitBtn");
+const changeAvatarBtn = document.getElementById("changeAvatarBtn");
+const avatarInput = document.getElementById("avatarInput");
+
+const DEFAULT_AVATAR =
+  elements.avatar?.dataset.defaultAvatar ||
+  "../assets/avatar.png";
+const MAX_AVATAR_BYTES = 5 * 1024 * 1024;
+const AVATAR_BUTTON_DEFAULT_TEXT = changeAvatarBtn?.textContent || "Change Photo";
 
 let currentProfile = null;
 
@@ -30,6 +40,7 @@ closeBtn.addEventListener("click", () => sidebar.classList.remove("open"));
 document.addEventListener("DOMContentLoaded", () => {
   initializeProfile();
   setupEditHandlers();
+  setupAvatarUpload();
 });
 
 async function initializeProfile() {
@@ -73,6 +84,8 @@ function renderProfile(profile) {
   elements.year.textContent = profile.year || "—";
   elements.student.textContent = profile.student_id || "—";
   elements.email.textContent = profile.email || "—";
+
+  applyAvatarSource(profile.profile_image_url);
 }
 
 function setProfileVisible(isVisible) {
@@ -199,5 +212,77 @@ function persistProfile(profile) {
     }
   } catch (error) {
     console.warn("Unable to persist profile to localStorage:", error);
+  }
+}
+
+function setupAvatarUpload() {
+  if (!changeAvatarBtn || !avatarInput) return;
+
+  changeAvatarBtn.addEventListener("click", () => {
+    avatarInput.click();
+  });
+
+  avatarInput.addEventListener("change", async () => {
+    const file = avatarInput.files?.[0];
+    if (!file) return;
+
+    if (file.size > MAX_AVATAR_BYTES) {
+      showMessage("Please choose an image smaller than 5 MB.", "error");
+      avatarInput.value = "";
+      return;
+    }
+
+    await uploadAvatar(file);
+    avatarInput.value = "";
+  });
+}
+
+async function uploadAvatar(file) {
+  const formData = new FormData();
+  formData.append("file", file, file.name);
+
+  try {
+    toggleAvatarUploading(true);
+    showMessage("Uploading photo…");
+    const res = await fetch("/api/profile/avatar", {
+      method: "POST",
+      credentials: "include",
+      body: formData,
+    });
+
+    const payload = await res.json().catch(() => ({}));
+    if (!res.ok || payload?.success === false) {
+      throw new Error(payload?.message || "Failed to update profile photo.");
+    }
+
+    const updatedProfile = payload.data?.profile;
+    if (updatedProfile) {
+      currentProfile = updatedProfile;
+      persistProfile(updatedProfile);
+      renderProfile(updatedProfile);
+    }
+    showMessage("Profile photo updated.", "success");
+  } catch (error) {
+    console.error("Avatar upload failed:", error);
+    showMessage(error.message || "Unable to update profile photo.", "error");
+  } finally {
+    toggleAvatarUploading(false);
+  }
+}
+
+function toggleAvatarUploading(isUploading) {
+  if (changeAvatarBtn) {
+    changeAvatarBtn.disabled = isUploading;
+    changeAvatarBtn.textContent = isUploading ? "Uploading…" : AVATAR_BUTTON_DEFAULT_TEXT;
+  }
+}
+
+function applyAvatarSource(url) {
+  const fallback = url || DEFAULT_AVATAR;
+  if (elements.avatar) {
+    elements.avatar.src = fallback;
+  }
+  if (elements.headerIcon) {
+    elements.headerIcon.src = fallback;
   }
 }

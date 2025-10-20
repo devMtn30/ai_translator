@@ -41,6 +41,13 @@ ACTIVE_SESSIONS = set()
 PUBLIC_HTML_ROOTS = {"login", "register", "forgot"}
 PUBLIC_HTML_PATHS = {"/index.html"}
 
+PROFILE_UPLOAD_SUBDIR = os.getenv("PROFILE_UPLOAD_SUBDIR", "uploads/profile")
+PROFILE_UPLOAD_FOLDER = os.path.abspath(os.path.join(app.root_path, PROFILE_UPLOAD_SUBDIR))
+ALLOWED_PROFILE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".gif", ".webp"}
+MAX_PROFILE_IMAGE_BYTES = int(os.getenv("PROFILE_UPLOAD_MAX_BYTES", 5 * 1024 * 1024))
+
+os.makedirs(PROFILE_UPLOAD_FOLDER, exist_ok=True)
+
 
 class ForbiddenRedirectMiddleware:
     def __init__(self, app):
@@ -121,7 +128,7 @@ def fetch_user_by_email(cursor, email):
     cursor.execute(
         """
         SELECT id, email, firstname, lastname, student_id, year, year_level, gender,
-               password_hash, password, verified, verified_at, created_at
+               password_hash, password, verified, verified_at, created_at, profile_image_path
         FROM users
         WHERE email = %s
         """,
@@ -134,7 +141,7 @@ def fetch_user_by_id(cursor, user_id):
     cursor.execute(
         """
         SELECT id, email, firstname, lastname, student_id, year, year_level, gender,
-               password_hash, password, verified, verified_at, created_at
+               password_hash, password, verified, verified_at, created_at, profile_image_path
         FROM users
         WHERE id = %s
         """,
@@ -515,6 +522,7 @@ TABLE_DEFINITIONS = [
         year VARCHAR(50),
         year_level VARCHAR(50),
         gender VARCHAR(20),
+        profile_image_path VARCHAR(255),
         verified TINYINT(1) DEFAULT 0,
         verified_at DATETIME NULL,
         verification_token VARCHAR(255),
@@ -683,6 +691,27 @@ def ensure_reading_progress_schema(cursor):
         pass
 
 
+def ensure_profile_image_column(cursor):
+    try:
+        cursor.execute("SHOW COLUMNS FROM users LIKE 'profile_image_path'")
+        column = cursor.fetchone()
+    except mysql.connector.Error:
+        return
+
+    if column:
+        return
+
+    try:
+        cursor.execute(
+            """
+            ALTER TABLE users
+            ADD COLUMN profile_image_path VARCHAR(255) NULL AFTER gender
+            """
+        )
+    except mysql.connector.Error:
+        pass
+
+
 def seed_default_quizzes(cursor):
     try:
         cursor.execute("SELECT COUNT(*) FROM quizzes")
@@ -734,6 +763,7 @@ def initialize_database():
         for ddl in TABLE_DEFINITIONS:
             cursor.execute(ddl)
         ensure_reading_progress_schema(cursor)
+        ensure_profile_image_column(cursor)
         seed_default_quizzes(cursor)
         conn.commit()
     except mysql.connector.Error as exc:
@@ -984,6 +1014,15 @@ def serialize_user(row):
     if not row:
         return None
     verified = row.get("verified_at") is not None or bool(row.get("verified"))
+    avatar_path = row.get("profile_image_path")
+    avatar_url = None
+    if avatar_path:
+        normalized = avatar_path.lstrip("/")
+        base_url = build_base_url()
+        if base_url:
+            avatar_url = f"{base_url}/{normalized}"
+        else:
+            avatar_url = f"/{normalized}"
     return {
         "id": row.get("id"),
         "email": row.get("email"),
@@ -993,7 +1032,34 @@ def serialize_user(row):
         "year": row.get("year") or row.get("year_level"),
         "gender": row.get("gender"),
         "verified": verified,
+        "profile_image_path": avatar_path,
+        "profile_image_url": avatar_url,
     }
+
+
+def resolve_avatar_abs_path(relative_path):
+    if not relative_path:
+        return None
+    normalized = relative_path.lstrip("/\\")
+    absolute_path = os.path.abspath(os.path.join(app.root_path, normalized))
+    try:
+        common = os.path.commonpath([absolute_path, PROFILE_UPLOAD_FOLDER])
+    except ValueError:
+        return None
+    if common != PROFILE_UPLOAD_FOLDER:
+        return None
+    return absolute_path
+
+
+def remove_profile_image(relative_path):
+    absolute_path = resolve_avatar_abs_path(relative_path)
+    if not absolute_path:
+        return
+    try:
+        if os.path.isfile(absolute_path):
+            os.remove(absolute_path)
+    except OSError:
+        pass
 
 
 @app.route("/")
@@ -1482,6 +1548,74 @@ def update_profile():
 
         user = fetch_user_by_id(cursor, session["user_id"])
         return json_response(True, "Profile updated successfully.", {"profile": serialize_user(user)})
+    finally:
+        cursor.close()
+        conn.close()
+
+
+@app.route("/api/profile/avatar", methods=["POST"])
+def upload_profile_avatar():
+    user_id = session.get("user_id")
+    if not user_id:
+        return json_response(False, "Authentication required.", status=401)
+
+    if "file" not in request.files:
+        return json_response(False, "No file uploaded.", status=400)
+    file = request.files["file"]
+    if not file or not file.filename:
+        return json_response(False, "No file selected.", status=400)
+
+    extension = os.path.splitext(file.filename)[1].lower()
+    if extension not in ALLOWED_PROFILE_EXTENSIONS:
+        return json_response(False, "Unsupported image type. Use PNG, JPG, JPEG, GIF, or WEBP.", status=400)
+
+    content_length = request.content_length or 0
+    if MAX_PROFILE_IMAGE_BYTES and content_length > MAX_PROFILE_IMAGE_BYTES:
+        return json_response(False, "Image exceeds the allowed size limit.", status=413)
+
+    new_filename = f"{uuid.uuid4().hex}{extension}"
+    relative_path = f"{PROFILE_UPLOAD_SUBDIR}/{new_filename}"
+    absolute_path = os.path.join(PROFILE_UPLOAD_FOLDER, new_filename)
+
+    try:
+        file.save(absolute_path)
+    except Exception as exc:
+        return json_response(False, f"Failed to save uploaded image: {exc}", status=500)
+
+    if MAX_PROFILE_IMAGE_BYTES:
+        try:
+            actual_size = os.path.getsize(absolute_path)
+        except OSError:
+            actual_size = 0
+        if actual_size > MAX_PROFILE_IMAGE_BYTES:
+            remove_profile_image(relative_path)
+            return json_response(False, "Image exceeds the allowed size limit.", status=413)
+
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+    try:
+        cursor.execute(
+            "SELECT profile_image_path FROM users WHERE id = %s",
+            (user_id,),
+        )
+        row = cursor.fetchone() or {}
+        previous_path = row.get("profile_image_path")
+
+        cursor.execute(
+            "UPDATE users SET profile_image_path = %s WHERE id = %s",
+            (relative_path, user_id),
+        )
+        conn.commit()
+
+        if previous_path and previous_path != relative_path:
+            remove_profile_image(previous_path)
+
+        user = fetch_user_by_id(cursor, user_id)
+        return json_response(True, "Profile image updated successfully.", {"profile": serialize_user(user)})
+    except mysql.connector.Error as exc:
+        conn.rollback()
+        remove_profile_image(relative_path)
+        return json_response(False, f"Database error: {exc}", status=500)
     finally:
         cursor.close()
         conn.close()

@@ -19,7 +19,11 @@
     <p class="profile-message" id="profileMessage" hidden></p>
 
     <div class="profile-header" data-profile-section>
-      <img src="../assets/avatar.png" alt="Avatar" class="avatar">
+      <div class="avatar-wrapper">
+        <img src="../assets/avatar.png" alt="Avatar" class="avatar" data-profile-avatar data-default-avatar="../assets/avatar.png">
+        <button type="button" class="avatar-btn" id="changeAvatarBtn">Change Photo</button>
+        <input type="file" id="avatarInput" accept="image/*" hidden>
+      </div>
       <h2 class="player-name" data-profile-name>—</h2>
       <p class="player-gender" data-profile-gender>—</p>
       <button id="editBtn" class="edit-btn" hidden>Edit Profile</button>

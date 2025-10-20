@@ -4,7 +4,9 @@
 const sidebar = document.getElementById("sidebar");
 const menuBtn = document.getElementById("menuBtn");
 const closeBtn = document.getElementById("closeBtn");
-const historyBox = document.querySelector(".history-box");
+const historyGrid = document.querySelector(".history-grid");
+const navAvatar = document.querySelector(".profile-icon");
+const DEFAULT_AVATAR = "../assets/avatar.png";
 
 const BOOK_TITLES = {
   "cebuano.pdf": "Cebuano For Beginners",
@@ -36,13 +38,16 @@ async function updateWelcomeText() {
     if (displayName) {
       label.textContent = `Hi, ${displayName}`;
     }
+    if (navAvatar) {
+      navAvatar.src = profile.profile_image_url || DEFAULT_AVATAR;
+    }
   } catch (err) {
     console.error("❌ failed to update welcome text:", err);
   }
 }
 
 function loadHistory() {
-  historyBox.innerHTML = "<p style='text-align:center;color:#555;'>Loading...</p>";
+  setHistoryMessage("Loading...", "muted");
 
   fetch("/api/history")
     .then(res => res.json())
@@ -55,37 +60,112 @@ function loadHistory() {
     })
     .catch(err => {
       console.error("❌ failed to load reading history:", err);
-      historyBox.innerHTML = "<p style='text-align:center;color:#b91c1c;'>Unable to load history.</p>";
+      setHistoryMessage("Unable to load history.", "error");
     });
 }
 
 function renderHistory(entries) {
-  historyBox.innerHTML = "";
+  if (!historyGrid) return;
+  historyGrid.innerHTML = "";
 
   if (!entries.length) {
-    historyBox.innerHTML = "<p style='text-align:center;color:#555;'>No activity yet.</p>";
+    setHistoryMessage("No activity yet.", "muted");
     return;
   }
 
   entries.forEach(entry => {
-    const paragraph = document.createElement("p");
-    paragraph.style.margin = "4px 10px";
-    paragraph.style.color = "#000";
-
-    if (entry.type === "reading") {
-      const label = BOOK_TITLES[entry.book_name] || entry.book_name || "Unknown book";
-      const lastRead = formatTimestamp(entry.last_read_at || entry.occurred_at);
-      paragraph.textContent = `• ${label} — Last read: ${lastRead}`;
-    } else if (entry.type === "quiz") {
-      const completed = formatTimestamp(entry.completed_at || entry.occurred_at);
-      paragraph.textContent = `• Quiz: ${entry.quiz_title} — Score ${entry.score}/${entry.total_questions} (${completed})`;
-    } else {
-      const time = formatTimestamp(entry.occurred_at || entry.completed_at || entry.last_read_at);
-      paragraph.textContent = `• Activity — ${time}`;
-    }
-
-    historyBox.appendChild(paragraph);
+    historyGrid.appendChild(createHistoryCard(entry));
   });
+}
+
+function setHistoryMessage(message, tone = "muted") {
+  if (!historyGrid) return;
+  const paragraph = document.createElement("p");
+  paragraph.className = `history-message history-message--${tone}`;
+  paragraph.textContent = message;
+  historyGrid.innerHTML = "";
+  historyGrid.appendChild(paragraph);
+}
+
+function createHistoryCard(entry) {
+  const type = entry.type === "quiz" ? "quiz" : entry.type === "reading" ? "reading" : "general";
+  const badgeLabel = type === "quiz" ? "Quiz" : type === "reading" ? "Reading" : "Activity";
+  const timestampIso = extractTimestamp(entry);
+  const displayTime = formatTimestamp(timestampIso);
+  const relativeTime = formatRelativeTime(timestampIso);
+
+  const card = document.createElement("article");
+  card.className = `history-card history-card--${type}`;
+
+  const header = document.createElement("div");
+  header.className = "history-card__header";
+
+  const badge = document.createElement("span");
+  badge.className = `history-card__badge history-card__badge--${type}`;
+  badge.textContent = badgeLabel;
+
+  const time = document.createElement("time");
+  time.className = "history-card__time";
+  if (timestampIso) {
+    time.setAttribute("datetime", timestampIso);
+  }
+  time.textContent = relativeTime || displayTime;
+  time.title = displayTime;
+
+  header.appendChild(badge);
+  header.appendChild(time);
+  card.appendChild(header);
+
+  const title = document.createElement("h4");
+  title.className = "history-card__title";
+  const detail = document.createElement("p");
+  detail.className = "history-card__meta";
+
+  if (type === "reading") {
+    const label = BOOK_TITLES[entry.book_name] || entry.book_name || "Unknown book";
+    title.textContent = label;
+    detail.textContent = `Last read on ${displayTime}`;
+  } else if (type === "quiz") {
+    title.textContent = entry.quiz_title || "Quiz attempt";
+    const total = entry.total_questions || entry.total || 0;
+    const score = typeof entry.score === "number" ? entry.score : entry.correct_answers;
+    const scoreText = total ? `${score}/${total}` : `${score || 0}`;
+    detail.textContent = `Score: ${scoreText}`;
+
+    if (entry.language) {
+      const pill = document.createElement("span");
+      pill.className = "history-card__pill";
+      pill.textContent = entry.language;
+      card.appendChild(pill);
+    }
+  } else {
+    title.textContent = entry.title || "Activity";
+    detail.textContent = displayTime;
+  }
+
+  card.appendChild(title);
+  card.appendChild(detail);
+
+  if (type === "reading" && entry.progress) {
+    const pill = document.createElement("span");
+    pill.className = "history-card__pill history-card__pill--reading";
+    pill.textContent = `Progress: ${entry.progress}`;
+    card.appendChild(pill);
+  }
+
+  if (type === "quiz") {
+    const completion = document.createElement("p");
+    completion.className = "history-card__meta history-card__meta--muted";
+    completion.textContent = `Completed: ${displayTime}`;
+    card.appendChild(completion);
+  } else if (relativeTime) {
+    const caption = document.createElement("p");
+    caption.className = "history-card__meta history-card__meta--muted";
+    caption.textContent = `Updated ${relativeTime}`;
+    card.appendChild(caption);
+  }
+
+  return card;
 }
 
 function formatTimestamp(isoString) {
@@ -93,4 +173,40 @@ function formatTimestamp(isoString) {
   const parsed = new Date(isoString);
   if (Number.isNaN(parsed.getTime())) return isoString;
   return parsed.toLocaleString();
+}
+
+function extractTimestamp(entry) {
+  return entry.occurred_at || entry.completed_at || entry.last_read_at || entry.updated_at || entry.created_at || "";
+}
+
+function formatRelativeTime(isoString) {
+  if (typeof Intl === "undefined" || typeof Intl.RelativeTimeFormat === "undefined") {
+    return "";
+  }
+  if (!isoString) return "";
+  const parsed = new Date(isoString);
+  if (Number.isNaN(parsed.getTime())) return "";
+
+  const diffMs = parsed.getTime() - Date.now();
+  const diffSeconds = Math.round(diffMs / 1000);
+  const absSeconds = Math.abs(diffSeconds);
+
+  const rtf = new Intl.RelativeTimeFormat("en", { numeric: "auto" });
+
+  if (absSeconds < 60) {
+    return rtf.format(Math.round(diffSeconds), "second");
+  }
+  if (absSeconds < 60 * 60) {
+    return rtf.format(Math.round(diffSeconds / 60), "minute");
+  }
+  if (absSeconds < 60 * 60 * 24) {
+    return rtf.format(Math.round(diffSeconds / (60 * 60)), "hour");
+  }
+  if (absSeconds < 60 * 60 * 24 * 7) {
+    return rtf.format(Math.round(diffSeconds / (60 * 60 * 24)), "day");
+  }
+  if (absSeconds < 60 * 60 * 24 * 30) {
+    return rtf.format(Math.round(diffSeconds / (60 * 60 * 24 * 7)), "week");
+  }
+  return parsed.toLocaleDateString();
 }

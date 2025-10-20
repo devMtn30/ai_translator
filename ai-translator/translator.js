@@ -19,8 +19,10 @@ const result = document.getElementById("resultBox");
 const audioPlayer = document.getElementById("audioPlayer");
 
 const chatBtn = document.getElementById("chatBtn");
-const voiceBtn = document.getElementById("voiceBtn");
-const micBtn = document.getElementById("micBtn");
+const voiceBtn = document.getElementById("voiceBtn"); // 🔊 Translate + Speak
+const micBtn = document.getElementById("micBtn"); // 🎤 Speak & Translate
+const navAvatar = document.querySelector(".profile-icon");
+const DEFAULT_AVATAR = "../assets/avatar.png";
 
 // const API_BASE = "https://pronocoach.duckdns.org";
 const API_BASE = "http://127.0.0.1:5000";
@@ -44,6 +46,9 @@ async function updateWelcomeText() {
     const displayName = profile.firstname || profile.lastname || profile.email;
     if (displayName) {
       label.textContent = `Hi, ${displayName}`;
+    }
+    if (navAvatar) {
+      navAvatar.src = profile.profile_image_url || DEFAULT_AVATAR;
     }
   } catch (err) {
     console.error("❌ failed to update welcome text:", err);
@@ -71,7 +76,7 @@ chatBtn.addEventListener("click", async () => {
   }
 });
 
-// -------------------- 2) Translate (Voice) --------------------
+// -------------------- 2) Translate + Speak --------------------
 voiceBtn.addEventListener("click", () => {
   handleRecordingFlow(voiceBtn, {
     activeLabel: "⏹ Stop",
@@ -83,6 +88,7 @@ voiceBtn.addEventListener("click", () => {
         const translation = await transcribeAndTranslate(audioBlob);
         const { original, translatedText } = translation;
         result.innerText = formatVoiceResult(original, translatedText);
+        await maybePlayTts(translatedText);
       } catch (err) {
         console.error("❌ Voice translate failed:", err);
         result.innerText = `❌ Error: ${err.message}`;

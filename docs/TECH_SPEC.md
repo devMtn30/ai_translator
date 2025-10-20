@@ -113,7 +113,7 @@ Admin access is guarded purely on the client: `admin.html` prompts for a demo pa
 ### 5.1 Tables
 | Table | Purpose | Key Columns |
 | --- | --- | --- |
-| `users` | Core user accounts | `id (PK)`, `email (unique)`, `password_hash`, `firstname`, `lastname`, `student_id`, `year_level`, `gender`, `created_at`, `verified_at` |
+| `users` | Core user accounts | `id (PK)`, `email (unique)`, `password_hash`, `firstname`, `lastname`, `student_id`, `year_level`, `gender`, `profile_image_path`, `created_at`, `verified_at` |
 | `email_verification_tokens` | Signup verification | `id`, `user_id`, `token`, `expires_at`, `consumed_at` |
 | `password_reset_tokens` | Password reset flow | `id`, `user_id`, `token`, `expires_at`, `consumed_at` |
 | `reading_progress` | Last-read state per book | `id`, `user_id`, `book_name`, `page`, `updated_at` |
@@ -141,6 +141,7 @@ CREATE TABLE users (
   student_id VARCHAR(50),
   year_level VARCHAR(50),
   gender VARCHAR(20),
+  profile_image_path VARCHAR(255),
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   verified_at TIMESTAMP NULL
 );
