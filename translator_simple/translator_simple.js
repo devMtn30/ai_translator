@@ -8,7 +8,8 @@ const chatBtn = document.getElementById("chatBtn");
 const voiceBtn = document.getElementById("voiceBtn");
 const micBtn = document.getElementById("micBtn");
 
-const API_BASE = "https://pronocoach.duckdns.org";
+// const API_BASE = "https://pronocoach.duckdns.org";
+const API_BASE = "http://127.0.0.1:5000";
 
 // Chat Translation (Simple)
 chatBtn.addEventListener("click", async () => {

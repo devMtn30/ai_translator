@@ -15,45 +15,42 @@
     <img src="../assets/avatar.png" alt="Profile" class="profile-icon">
   </header>
 
-  <main class="content">
-   
-    <div class="profile-header">
+  <main class="content" id="profileContent">
+    <p class="profile-message" id="profileMessage" hidden></p>
+
+    <div class="profile-header" data-profile-section>
       <img src="../assets/avatar.png" alt="Avatar" class="avatar">
-      <h2 class="player-name">Player Name</h2>
- 
-	 
- <button id="editBtn" class="edit-btn">Edit Profile</button>
+      <h2 class="player-name" data-profile-name>—</h2>
+      <p class="player-gender" data-profile-gender>—</p>
+      <button id="editBtn" class="edit-btn" hidden>Edit Profile</button>
+    </div>
 
-</div>
-    
-
-   
-    <div class="info-card">
+    <section class="info-card" data-profile-section>
       <div class="info-row">
         <span class="label">First Name</span>
-        <span class="value">John</span>
+        <span class="value" data-profile-firstname>—</span>
       </div>
       <div class="info-row">
         <span class="label">Last Name</span>
-        <span class="value">Doe</span>
+        <span class="value" data-profile-lastname>—</span>
       </div>
       <div class="info-row">
         <span class="label">Year</span>
-        <span class="value">3rd Year</span>
+        <span class="value" data-profile-year>—</span>
       </div>
       <div class="info-row">
         <span class="label">Student ID</span>
-        <span class="value">02000xxxxx</span>
+        <span class="value" data-profile-student>—</span>
       </div>
       <div class="info-row">
         <span class="label">Gender</span>
-        <span class="value">Male</span>
+        <span class="value" data-profile-gender-detail>—</span>
       </div>
       <div class="info-row">
         <span class="label">Email</span>
-        <span class="value">surname.xxx@gmail.com</span>
+        <span class="value" data-profile-email>—</span>
       </div>
-    </div>
+    </section>
   </main>
 
   <!-- 사이드바 -->
@@ -72,6 +69,41 @@
       </ul>
     </div>
   </aside>
+
+  <section id="editModal" class="edit-modal" aria-hidden="true">
+    <div class="edit-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="editModalTitle">
+      <header class="edit-modal__header">
+        <h3 id="editModalTitle">Edit Profile</h3>
+        <button type="button" class="edit-modal__close" id="editCloseBtn" aria-label="Close edit dialog">&times;</button>
+      </header>
+      <form id="editForm" class="edit-form">
+        <div class="edit-form__group">
+          <label for="editFirstname">First Name</label>
+          <input type="text" id="editFirstname" name="firstname" maxlength="120" required>
+        </div>
+        <div class="edit-form__group">
+          <label for="editLastname">Last Name</label>
+          <input type="text" id="editLastname" name="lastname" maxlength="120" required>
+        </div>
+        <div class="edit-form__group">
+          <label for="editYear">Year Level</label>
+          <input type="text" id="editYear" name="year" maxlength="60" placeholder="e.g. 3rd Year">
+        </div>
+        <div class="edit-form__group">
+          <label for="editStudentId">Student ID</label>
+          <input type="text" id="editStudentId" name="student_id" maxlength="60">
+        </div>
+        <div class="edit-form__group">
+          <label for="editGender">Gender</label>
+          <input type="text" id="editGender" name="gender" maxlength="40">
+        </div>
+        <div class="edit-form__actions">
+          <button type="button" class="edit-form__btn edit-form__btn--secondary" id="editCancelBtn">Cancel</button>
+          <button type="submit" class="edit-form__btn edit-form__btn--primary" id="editSubmitBtn">Save Changes</button>
+        </div>
+      </form>
+    </div>
+  </section>
 
   <script src="profile.js"></script>
 </body>

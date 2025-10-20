@@ -1,6 +1,7 @@
 import os
 import uuid
 from datetime import datetime, timedelta
+from urllib.parse import unquote
 
 import mysql.connector
 from dotenv import load_dotenv
@@ -37,6 +38,8 @@ DB_CONFIG = {
 }
 
 ACTIVE_SESSIONS = set()
+PUBLIC_HTML_ROOTS = {"login", "register", "forgot"}
+PUBLIC_HTML_PATHS = {"/index.html"}
 
 
 def get_db_connection():
@@ -967,6 +970,33 @@ def index():
     return send_from_directory(app.static_folder, "index.html")
 
 
+@app.before_request
+def enforce_login_for_pages():
+    if session.get("user_id"):
+        return
+
+    if request.method not in ("GET", "HEAD"):
+        return
+
+    path = unquote(request.path or "")
+    if path == "/" or path.startswith("/api/"):
+        return
+
+    if not path.endswith(".html"):
+        return
+
+    normalized = path.rstrip("/")
+    if normalized in PUBLIC_HTML_PATHS:
+        return
+
+    first_segment = normalized.lstrip("/").split("/", 1)[0]
+    if first_segment in PUBLIC_HTML_ROOTS:
+        return
+
+    login_url = url_for("static", filename="login/login.html")
+    return redirect(login_url)
+
+
 @app.errorhandler(403)
 def handle_forbidden(error):
     if request.path.startswith("/api/"):
@@ -1353,6 +1383,24 @@ def get_profile(email):
         if current_user_id and current_user_id != user["id"]:
             return json_response(False, "Forbidden.", status=403)
 
+        return json_response(True, "Profile fetched successfully.", {"profile": serialize_user(user)})
+    finally:
+        cursor.close()
+        conn.close()
+
+
+@app.route("/api/profile/me", methods=["GET"])
+def get_own_profile():
+    user_id = session.get("user_id")
+    if not user_id:
+        return json_response(False, "Authentication required.", status=401)
+
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+    try:
+        user = fetch_user_by_id(cursor, user_id)
+        if not user:
+            return json_response(False, "User not found.", status=404)
         return json_response(True, "Profile fetched successfully.", {"profile": serialize_user(user)})
     finally:
         cursor.close()

@@ -2,74 +2,202 @@ const sidebar = document.getElementById("sidebar");
 const menuBtn = document.getElementById("menuBtn");
 const closeBtn = document.getElementById("closeBtn");
 
-// Open sidebar
-menuBtn.addEventListener("click", () => {
-  sidebar.classList.add("open");
+const profileMessage = document.getElementById("profileMessage");
+const profileSections = document.querySelectorAll("[data-profile-section]");
+const elements = {
+  name: document.querySelector("[data-profile-name]"),
+  genderHeadline: document.querySelector("[data-profile-gender]"),
+  firstName: document.querySelector("[data-profile-firstname]"),
+  lastName: document.querySelector("[data-profile-lastname]"),
+  year: document.querySelector("[data-profile-year]"),
+  student: document.querySelector("[data-profile-student]"),
+  genderDetail: document.querySelector("[data-profile-gender-detail]"),
+  email: document.querySelector("[data-profile-email]"),
+};
+
+const editBtn = document.getElementById("editBtn");
+const editModal = document.getElementById("editModal");
+const editCloseBtn = document.getElementById("editCloseBtn");
+const editCancelBtn = document.getElementById("editCancelBtn");
+const editForm = document.getElementById("editForm");
+const editSubmitBtn = document.getElementById("editSubmitBtn");
+
+let currentProfile = null;
+
+menuBtn.addEventListener("click", () => sidebar.classList.add("open"));
+closeBtn.addEventListener("click", () => sidebar.classList.remove("open"));
+
+document.addEventListener("DOMContentLoaded", () => {
+  initializeProfile();
+  setupEditHandlers();
 });
 
-// Close sidebar
-closeBtn.addEventListener("click", () => {
-  sidebar.classList.remove("open");
-});
+async function initializeProfile() {
+  setProfileVisible(false);
+  showMessage("Loading profile…");
 
-// 🔹 Load profile info
-document.addEventListener("DOMContentLoaded", async () => {
-  const stored = localStorage.getItem("authUser");
-  let authUser = null;
-  if (stored) {
-    try {
-      authUser = JSON.parse(stored);
-    } catch (err) {
-      console.warn("Failed to parse stored user:", err);
+  try {
+    const res = await fetch("/api/profile/me", { credentials: "include" });
+    if (res.status === 401) {
+      window.location.href = "../login/login.html";
+      return;
     }
-  }
+    const payload = await res.json();
+    if (!payload.success || !payload?.data?.profile) {
+      throw new Error(payload.message || "Failed to load profile.");
+    }
 
-  const email = authUser && authUser.email ? authUser.email : localStorage.getItem("email");
-  if (!email) {
-    alert("Login required.");
-    window.location.href = "../login/login.html";
+    currentProfile = payload.data.profile;
+    persistProfile(currentProfile);
+    renderProfile(currentProfile);
+    showMessage(""); // hide
+    setProfileVisible(true);
+    editBtn.hidden = false;
+  } catch (error) {
+    console.error("Failed to load profile:", error);
+    showMessage(error.message || "Unable to load profile.", "error");
+    editBtn.hidden = true;
+  }
+}
+
+function renderProfile(profile) {
+  const fullName = [profile.firstname, profile.lastname].filter(Boolean).join(" ") || profile.email || "—";
+  elements.name.textContent = fullName;
+
+  const genderText = profile.gender || "—";
+  elements.genderHeadline.textContent = genderText;
+  elements.genderDetail.textContent = genderText;
+
+  elements.firstName.textContent = profile.firstname || "—";
+  elements.lastName.textContent = profile.lastname || "—";
+  elements.year.textContent = profile.year || "—";
+  elements.student.textContent = profile.student_id || "—";
+  elements.email.textContent = profile.email || "—";
+}
+
+function setProfileVisible(isVisible) {
+  profileSections.forEach(section => {
+    section.style.display = isVisible ? "" : "none";
+  });
+}
+
+function showMessage(message, tone = "info") {
+  if (!message) {
+    profileMessage.hidden = true;
+    profileMessage.textContent = "";
+    profileMessage.classList.remove("profile-message--error", "profile-message--success");
     return;
   }
 
-  try {
-    const res = await fetch(`/api/profile/${encodeURIComponent(email)}`, {
-      credentials: "include"
-    });
-    const data = await res.json();
-
-    if (data.success && data.data && data.data.profile) {
-      const profile = data.data.profile;
-      localStorage.setItem("authUser", JSON.stringify(profile));
-      if (profile.student_id) {
-        localStorage.setItem("studentId", profile.student_id);
-      }
-      if (profile.email) {
-        localStorage.setItem("email", profile.email);
-      }
-
-      document.querySelector(".player-name").textContent =
-        `${profile.firstname || ""} ${profile.lastname || ""}`.trim();
-      document.querySelector(".player-gender").textContent = profile.gender || "—";
-
-      const infoValues = document.querySelectorAll(".info-card .value");
-      infoValues[0].textContent = profile.firstname || "—";
-      infoValues[1].textContent = profile.lastname || "—";
-      infoValues[2].textContent = profile.year ? `${profile.year} Year` : "—";
-      infoValues[3].textContent = profile.student_id || "—";
-      infoValues[4].textContent = profile.gender || "—";
-      infoValues[5].textContent = profile.email || email;
-    } else if (res.status === 403) {
-      alert("You can only view your own profile.");
-      window.location.href = "../main/main.html";
-    } else {
-      alert(data.message || data.error || "Failed to load profile.");
-    }
-  } catch (err) {
-    console.error("❌ Profile Error:", err);
-    alert("Server connection failed.");
+  profileMessage.hidden = false;
+  profileMessage.textContent = message;
+  profileMessage.classList.remove("profile-message--error", "profile-message--success");
+  if (tone === "error") {
+    profileMessage.classList.add("profile-message--error");
+  } else if (tone === "success") {
+    profileMessage.classList.add("profile-message--success");
   }
+}
 
-  document.getElementById("editBtn").addEventListener("click", () => {
-    window.location.href = "/profile/edit.html";
+function setupEditHandlers() {
+  editBtn.addEventListener("click", () => {
+    if (!currentProfile) return;
+    populateEditForm(currentProfile);
+    openEditModal();
   });
-});
+
+  editCloseBtn.addEventListener("click", closeEditModal);
+  editCancelBtn.addEventListener("click", closeEditModal);
+
+  editForm.addEventListener("submit", async event => {
+    event.preventDefault();
+    if (!currentProfile) return;
+
+    const formData = new FormData(editForm);
+    const payload = {
+      firstname: formData.get("firstname")?.trim() || "",
+      lastname: formData.get("lastname")?.trim() || "",
+      year: formData.get("year")?.trim() || "",
+      student_id: formData.get("student_id")?.trim() || "",
+      gender: formData.get("gender")?.trim() || "",
+    };
+
+    if (!payload.firstname || !payload.lastname) {
+      showMessage("First and last name are required.", "error");
+      return;
+    }
+
+    await submitProfileUpdate(payload);
+  });
+}
+
+function populateEditForm(profile) {
+  editForm.firstname.value = profile.firstname || "";
+  editForm.lastname.value = profile.lastname || "";
+  editForm.year.value = profile.year || "";
+  editForm.student_id.value = profile.student_id || "";
+  editForm.gender.value = profile.gender || "";
+}
+
+function openEditModal() {
+  editModal.classList.add("open");
+  editModal.setAttribute("aria-hidden", "false");
+  editForm.firstname.focus();
+}
+
+function closeEditModal() {
+  editModal.classList.remove("open");
+  editModal.setAttribute("aria-hidden", "true");
+}
+
+async function submitProfileUpdate(payload) {
+  try {
+    toggleEditSubmitting(true);
+    const res = await fetch("/api/profile/update", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify(payload),
+    });
+
+    const responseBody = await res.json().catch(() => ({}));
+    if (!res.ok || responseBody.success === false) {
+      throw new Error(responseBody.message || "Failed to update profile.");
+    }
+
+    const updatedProfile = responseBody.data?.profile;
+    if (updatedProfile) {
+      currentProfile = updatedProfile;
+      persistProfile(updatedProfile);
+      renderProfile(updatedProfile);
+    }
+
+    showMessage("Profile updated successfully.", "success");
+    closeEditModal();
+  } catch (error) {
+    console.error("Profile update failed:", error);
+    showMessage(error.message || "Unable to save profile changes.", "error");
+  } finally {
+    toggleEditSubmitting(false);
+  }
+}
+
+function toggleEditSubmitting(isSubmitting) {
+  editSubmitBtn.disabled = isSubmitting;
+  editCancelBtn.disabled = isSubmitting;
+  editSubmitBtn.textContent = isSubmitting ? "Saving…" : "Save Changes";
+}
+
+function persistProfile(profile) {
+  try {
+    localStorage.setItem("authUser", JSON.stringify(profile));
+    if (profile.student_id) {
+      localStorage.setItem("studentId", profile.student_id);
+    }
+    if (profile.email) {
+      localStorage.setItem("email", profile.email);
+    }
+  } catch (error) {
+    console.warn("Unable to persist profile to localStorage:", error);
+  }
+}
