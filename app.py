@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 
 import mysql.connector
 from dotenv import load_dotenv
-from flask import Flask, jsonify, request, send_from_directory, session
+from flask import Flask, jsonify, redirect, request, send_from_directory, session, url_for
 from flask_bcrypt import Bcrypt
 from flask_cors import CORS
 from flask_mail import Mail, Message
@@ -35,6 +35,8 @@ DB_CONFIG = {
     "password": os.getenv("MYSQL_PASSWORD", os.getenv("DB_PASSWORD", "")),
     "database": os.getenv("MYSQL_DB", os.getenv("DB_NAME", "pronoappsys")),
 }
+
+ACTIVE_SESSIONS = set()
 
 
 def get_db_connection():
@@ -965,6 +967,15 @@ def index():
     return send_from_directory(app.static_folder, "index.html")
 
 
+@app.errorhandler(403)
+def handle_forbidden(error):
+    if request.path.startswith("/api/"):
+        message = getattr(error, "description", "Forbidden.")
+        return json_response(False, message, status=403)
+    login_url = url_for("static", filename="login/login.html")
+    return redirect(login_url)
+
+
 @app.route("/reset/<token>", methods=["GET"])
 def serve_reset_page(token):
     return send_from_directory(os.path.join(app.static_folder, "forgot"), "newpassword.html")
@@ -1159,6 +1170,7 @@ def login():
         session["user_id"] = user["id"]
         session["email"] = user["email"]
         session.permanent = True
+        ACTIVE_SESSIONS.add(user["id"])
 
         return json_response(True, "Login successful.", {"user": serialize_user(user)})
     finally:
@@ -1168,7 +1180,10 @@ def login():
 
 @app.route("/api/logout", methods=["POST"])
 def logout():
+    user_id = session.get("user_id")
     session.clear()
+    if user_id and user_id in ACTIVE_SESSIONS:
+        ACTIVE_SESSIONS.discard(user_id)
     return json_response(True, "Logged out.")
 
 
@@ -1380,6 +1395,244 @@ def update_profile():
 
         user = fetch_user_by_id(cursor, session["user_id"])
         return json_response(True, "Profile updated successfully.", {"profile": serialize_user(user)})
+    finally:
+        cursor.close()
+        conn.close()
+
+
+def ensure_authenticated():
+    if not session.get("user_id"):
+        return json_response(False, "Authentication required.", status=401)
+    return None
+
+
+@app.route("/api/admin/users", methods=["GET"])
+def admin_users():
+    auth_error = ensure_authenticated()
+    if auth_error:
+        return auth_error
+
+    limit = request.args.get("limit", 100, type=int) or 100
+    limit = max(1, min(limit, 500))
+    offset = request.args.get("offset", 0, type=int) or 0
+    search = (request.args.get("search") or "").strip()
+
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+    try:
+        if search:
+            like = f"%{search.lower()}%"
+            cursor.execute(
+                """
+                SELECT id, email, firstname, lastname, student_id, year, year_level, gender,
+                       verified, verified_at, created_at
+                FROM users
+                WHERE LOWER(email) LIKE %s OR LOWER(firstname) LIKE %s OR LOWER(lastname) LIKE %s
+                ORDER BY created_at DESC
+                LIMIT %s OFFSET %s
+                """,
+                (like, like, like, limit, offset),
+            )
+        else:
+            cursor.execute(
+                """
+                SELECT id, email, firstname, lastname, student_id, year, year_level, gender,
+                       verified, verified_at, created_at
+                FROM users
+                ORDER BY created_at DESC
+                LIMIT %s OFFSET %s
+                """,
+                (limit, offset),
+            )
+        users = cursor.fetchall()
+        formatted = []
+        for row in users:
+            formatted.append(
+                {
+                    "id": row.get("id"),
+                    "email": row.get("email"),
+                    "firstname": row.get("firstname"),
+                    "lastname": row.get("lastname"),
+                    "student_id": row.get("student_id"),
+                    "year": row.get("year") or row.get("year_level"),
+                    "gender": row.get("gender"),
+                    "verified": bool(row.get("verified")) or row.get("verified_at") is not None,
+                    "created_at": isoformat_utc(row.get("created_at")),
+                }
+            )
+        return json_response(True, "Admin user list fetched.", {"users": formatted})
+    finally:
+        cursor.close()
+        conn.close()
+
+
+@app.route("/api/admin/users/<int:user_id>", methods=["PUT"])
+def admin_update_user(user_id):
+    auth_error = ensure_authenticated()
+    if auth_error:
+        return auth_error
+
+    data = request.get_json() or {}
+    allowed_fields = {
+        "firstname": "firstname",
+        "lastname": "lastname",
+        "year": "year",
+        "student_id": "student_id",
+        "gender": "gender",
+        "verified": "verified",
+    }
+
+    updates = []
+    values = []
+    for key, column in allowed_fields.items():
+        if key in data:
+            if key == "verified":
+                updates.append("verified = %s")
+                values.append(1 if data[key] else 0)
+            else:
+                updates.append(f"{column} = %s")
+                values.append(data[key])
+
+    if not updates:
+        return json_response(False, "No fields provided for update.", status=400)
+
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+    try:
+        values.append(user_id)
+        cursor.execute(
+            f"UPDATE users SET {', '.join(updates)} WHERE id = %s",
+            tuple(values),
+        )
+        conn.commit()
+
+        cursor.execute(
+            """
+            SELECT id, email, firstname, lastname, student_id, year, year_level, gender,
+                   verified, verified_at, created_at
+            FROM users
+            WHERE id = %s
+            """,
+            (user_id,),
+        )
+        user = cursor.fetchone()
+        if not user:
+            return json_response(False, "User not found.", status=404)
+
+        payload = {
+            "id": user.get("id"),
+            "email": user.get("email"),
+            "firstname": user.get("firstname"),
+            "lastname": user.get("lastname"),
+            "student_id": user.get("student_id"),
+            "year": user.get("year") or user.get("year_level"),
+            "gender": user.get("gender"),
+            "verified": bool(user.get("verified")) or user.get("verified_at") is not None,
+            "created_at": isoformat_utc(user.get("created_at")),
+        }
+        return json_response(True, "User updated.", {"user": payload})
+    except mysql.connector.Error as exc:
+        conn.rollback()
+        return json_response(False, f"Database error: {exc}", status=500)
+    finally:
+        cursor.close()
+        conn.close()
+
+
+@app.route("/api/admin/online", methods=["GET"])
+def admin_online():
+    auth_error = ensure_authenticated()
+    if auth_error:
+        return auth_error
+    return json_response(True, "Online count fetched.", {"online": len(ACTIVE_SESSIONS)})
+
+
+@app.route("/api/admin/quizzes", methods=["GET", "POST"])
+def admin_quizzes():
+    if request.method == "GET":
+        auth_error = ensure_authenticated()
+        if auth_error:
+            return auth_error
+
+        include_inactive = request.args.get("include_inactive", "1") != "0"
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        try:
+            quizzes = fetch_quiz_list(cursor, include_inactive=include_inactive)
+            return json_response(True, "Admin quiz list fetched.", {"quizzes": quizzes})
+        finally:
+            cursor.close()
+            conn.close()
+
+    return quizzes_collection()
+
+
+@app.route("/api/admin/quizzes/<int:quiz_id>", methods=["GET", "PUT", "DELETE"])
+def admin_quiz_resource(quiz_id):
+    return quiz_resource(quiz_id)
+
+
+@app.route("/api/admin/analytics", methods=["GET"])
+def admin_analytics():
+    auth_error = ensure_authenticated()
+    if auth_error:
+        return auth_error
+
+    now = datetime.utcnow()
+    last_24h = now - timedelta(hours=24)
+    last_7d = now - timedelta(days=7)
+
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+    try:
+        cursor.execute(
+            """
+            SELECT
+                COUNT(*) AS total_users,
+                SUM(CASE WHEN verified = 1 OR verified_at IS NOT NULL THEN 1 ELSE 0 END) AS verified_users,
+                SUM(CASE WHEN created_at >= %s THEN 1 ELSE 0 END) AS new_users_7d
+            FROM users
+            """,
+            (last_7d,),
+        )
+        user_stats = cursor.fetchone() or {}
+
+        cursor.execute("SELECT COUNT(*) AS total_quizzes FROM quizzes")
+        quiz_stats = cursor.fetchone() or {}
+
+        cursor.execute(
+            """
+            SELECT
+                COUNT(*) AS total_attempts,
+                SUM(CASE WHEN completed_at >= %s THEN 1 ELSE 0 END) AS attempts_24h
+            FROM quiz_attempts
+            """,
+            (last_24h,),
+        )
+        attempt_stats = cursor.fetchone() or {}
+
+        cursor.execute(
+            """
+            SELECT COUNT(*) AS recent_reads
+            FROM reading_progress
+            WHERE last_read_at >= %s
+            """,
+            (last_24h,),
+        )
+        reading_stats = cursor.fetchone() or {}
+
+        analytics = {
+            "total_users": user_stats.get("total_users", 0) or 0,
+            "verified_users": user_stats.get("verified_users", 0) or 0,
+            "new_users_last_7_days": user_stats.get("new_users_7d", 0) or 0,
+            "active_sessions": len(ACTIVE_SESSIONS),
+            "total_quizzes": quiz_stats.get("total_quizzes", 0) or 0,
+            "total_attempts": attempt_stats.get("total_attempts", 0) or 0,
+            "attempts_last_24h": attempt_stats.get("attempts_24h", 0) or 0,
+            "reading_updates_last_24h": reading_stats.get("recent_reads", 0) or 0,
+            "translations_last_24h": 0,
+        }
+        return json_response(True, "Analytics fetched.", {"analytics": analytics})
     finally:
         cursor.close()
         conn.close()
