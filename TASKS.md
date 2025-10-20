@@ -17,17 +17,24 @@
 
 ---
 
-Translation & AI Voice Input
+## Translation & AI Voice Input
 
-1. AI Translator  
-- [ ] Translate (Chat): Translates the input text into 7 target languages.
-- [ ] Translate (Voice): Captures the user’s speech through the microphone, sends the audio file to the server, converts it to text using OpenAI’s transcription model, and translates it into 7 target languages.
-→ Both modes use the same translation prompt; the only difference is the input type (text vs. voice).
+### 1. AI Translator  
+> Provides smart translation with **usage explanations** included.
 
-2. Basic Translation  
-- [ ] Translate (Chat): Translates the input text into 7 target languages and adds a short explanation or usage note under each translation.
-- [ ] Translate + Speak: Performs the same translation and explanation, then plays the TTS audio of the translated result.
-- [ ] Speak + Translate: Records the user’s speech input, converts it to text on the server, and returns translated output with explanations.
+- [x] **Translate (Chat):** Translates the input text into 7 target languages **and adds short explanations or usage notes** under each translation.  
+- [x] **Translate (Voice):** Converts speech input from the microphone to text (via OpenAI transcription), translates it into 7 target languages, **and appends explanations**.  
+- [x] **Speak + Translate:** Records user speech input, performs transcription → translation → adds explanations (optionally plays TTS audio).  
+- [x] **Voice Control Fix:** Rewire AI translator buttons so voice flow starts recording before translation and mic stop reuses the original handler without stacking listeners.
+
+---
+
+### 2. Basic Translator  
+> Performs **simple translations without explanations**.
+
+- [x] **Translate (Chat):** Translates the input text into 7 target languages only (no extra notes).  
+- [x] **Translate + Speak:** Performs translation and plays back the result using TTS (no explanations).  
+- [x] **Speak + Translate:** Converts speech input into text and translates it into 7 target languages (no explanations).  
 
 ---
 

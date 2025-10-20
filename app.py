@@ -42,6 +42,37 @@ PUBLIC_HTML_ROOTS = {"login", "register", "forgot"}
 PUBLIC_HTML_PATHS = {"/index.html"}
 
 
+class ForbiddenRedirectMiddleware:
+    def __init__(self, app):
+        self.app = app
+
+    def __call__(self, environ, start_response):
+        path = environ.get("PATH_INFO", "")
+        is_api_request = path.startswith("/api/")
+        redirected = {"value": False}
+
+        def redirecting_start_response(status, headers, exc_info=None):
+            if status.startswith("403") and not is_api_request:
+                redirected["value"] = True
+                filtered_headers = [(k, v) for (k, v) in headers if k.lower() != "location"]
+                filtered_headers.append(("Location", "/login/login.html"))
+                return start_response("302 FOUND", filtered_headers, exc_info)
+            return start_response(status, headers, exc_info)
+
+        response_iterable = self.app(environ, redirecting_start_response)
+
+        if redirected["value"]:
+            close = getattr(response_iterable, "close", None)
+            if callable(close):
+                close()
+            return []
+
+        return response_iterable
+
+
+app.wsgi_app = ForbiddenRedirectMiddleware(app.wsgi_app)
+
+
 def get_db_connection():
     return mysql.connector.connect(**DB_CONFIG)
 
@@ -1004,6 +1035,14 @@ def handle_forbidden(error):
         return json_response(False, message, status=403)
     login_url = url_for("static", filename="login/login.html")
     return redirect(login_url)
+
+
+@app.after_request
+def redirect_forbidden_responses(response):
+    if response.status_code == 403 and not request.path.startswith("/api/"):
+        login_url = url_for("static", filename="login/login.html")
+        return redirect(login_url)
+    return response
 
 
 @app.route("/reset/<token>", methods=["GET"])
