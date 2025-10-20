@@ -10,10 +10,10 @@
 
 ## Reader Module
 
-* [ ] Keep the current structure where the server only serves PDF files and the client opens them locally on the device.
-* [ ] For each user, store only the book title and the last read timestamp.
-* [ ] If the user reads the same book again, update the timestamp instead of creating a new record.
-* [ ] In the History view, display the records sorted by the most recently read time.
+* [x] Keep the current structure where the server only serves PDF files and the client opens them locally on the device.
+* [x] For each user, store only the book title and the last read timestamp.
+* [x] If the user reads the same book again, update the timestamp instead of creating a new record.
+* [x] In the History view, display the records sorted by the most recently read time.
 
 ---
 

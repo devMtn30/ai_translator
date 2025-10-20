@@ -48,6 +48,12 @@ def json_response(success, message, data=None, status=200):
     return jsonify(payload), status
 
 
+def isoformat_utc(value):
+    if isinstance(value, datetime):
+        return f"{value.isoformat()}Z"
+    return value
+
+
 def build_base_url():
     override = os.getenv("APP_BASE_URL")
     if override:
@@ -183,14 +189,65 @@ TABLE_DEFINITIONS = [
         id INT AUTO_INCREMENT PRIMARY KEY,
         user_id INT NOT NULL,
         book_name VARCHAR(255) NOT NULL,
-        progress INT DEFAULT 0,
-        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        last_read_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
         UNIQUE KEY uniq_user_book (user_id, book_name),
         CONSTRAINT fk_reading_progress_user FOREIGN KEY (user_id)
             REFERENCES users(id) ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     """,
+    """
+    CREATE TABLE IF NOT EXISTS quiz_history (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT NOT NULL,
+        quiz_title VARCHAR(255) NOT NULL,
+        score INT DEFAULT 0,
+        total_questions INT DEFAULT 0,
+        completed_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        CONSTRAINT fk_quiz_history_user FOREIGN KEY (user_id)
+            REFERENCES users(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    """,
 ]
+
+
+def ensure_reading_progress_schema(cursor):
+    """
+    Aligns the reading_progress table with the simplified
+    "book + last_read_at" contract specified for the reader module.
+    """
+    try:
+        cursor.execute("SHOW COLUMNS FROM reading_progress LIKE 'last_read_at'")
+        last_read_column = cursor.fetchone()
+    except mysql.connector.Error:
+        return
+
+    try:
+        if not last_read_column:
+            cursor.execute("SHOW COLUMNS FROM reading_progress LIKE 'updated_at'")
+            updated_column = cursor.fetchone()
+            if updated_column:
+                cursor.execute(
+                    """
+                    ALTER TABLE reading_progress
+                    CHANGE COLUMN updated_at last_read_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+                    """
+                )
+            else:
+                cursor.execute(
+                    """
+                    ALTER TABLE reading_progress
+                    ADD COLUMN last_read_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+                    """
+                )
+    except mysql.connector.Error:
+        pass
+
+    try:
+        cursor.execute("SHOW COLUMNS FROM reading_progress LIKE 'progress'")
+        if cursor.fetchone():
+            cursor.execute("ALTER TABLE reading_progress DROP COLUMN progress")
+    except mysql.connector.Error:
+        pass
 
 
 def initialize_database():
@@ -204,6 +261,7 @@ def initialize_database():
     try:
         for ddl in TABLE_DEFINITIONS:
             cursor.execute(ddl)
+        ensure_reading_progress_schema(cursor)
         conn.commit()
     except mysql.connector.Error as exc:
         conn.rollback()
@@ -214,6 +272,58 @@ def initialize_database():
 
 
 initialize_database()
+
+
+def fetch_reading_history_entries(cursor, user_id):
+    cursor.execute(
+        """
+        SELECT book_name, last_read_at
+        FROM reading_progress
+        WHERE user_id = %s
+        ORDER BY last_read_at DESC
+        """,
+        (user_id,),
+    )
+    rows = cursor.fetchall()
+    entries = []
+    for row in rows:
+        last_read_str = isoformat_utc(row.get("last_read_at"))
+        entries.append(
+            {
+                "type": "reading",
+                "book_name": row.get("book_name"),
+                "last_read_at": last_read_str,
+                "occurred_at": last_read_str,
+            }
+        )
+    return entries
+
+
+def fetch_quiz_history_entries(cursor, user_id):
+    cursor.execute(
+        """
+        SELECT quiz_title, score, total_questions, completed_at
+        FROM quiz_history
+        WHERE user_id = %s
+        ORDER BY completed_at DESC
+        """,
+        (user_id,),
+    )
+    rows = cursor.fetchall()
+    entries = []
+    for row in rows:
+        completed_str = isoformat_utc(row.get("completed_at"))
+        entries.append(
+            {
+                "type": "quiz",
+                "quiz_title": row.get("quiz_title"),
+                "score": row.get("score"),
+                "total_questions": row.get("total_questions"),
+                "completed_at": completed_str,
+                "occurred_at": completed_str,
+            }
+        )
+    return entries
 
 
 def serialize_user(row):
@@ -661,31 +771,82 @@ def update_profile():
 def save_progress():
     user_id = session.get("user_id")
     if not user_id:
-        return jsonify({"error": "Not logged in"}), 401
+        return json_response(False, "Authentication required.", status=401)
 
     data = request.get_json() or {}
     book_name = data.get("book_name")
-    progress = data.get("progress")
 
-    if not book_name or progress is None:
-        return jsonify({"error": "Missing parameters"}), 400
+    if not book_name:
+        return json_response(False, "Book name is required.", status=400)
 
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        timestamp = datetime.utcnow()
+        cursor.execute(
+            """
+            INSERT INTO reading_progress (user_id, book_name, last_read_at)
+            VALUES (%s, %s, %s)
+            ON DUPLICATE KEY UPDATE last_read_at = VALUES(last_read_at)
+            """,
+            (user_id, book_name, timestamp),
+        )
+        conn.commit()
+        entry = {"book_name": book_name, "last_read_at": f"{timestamp.isoformat()}Z"}
+        return json_response(True, "Reading activity recorded.", {"entry": entry})
+    except mysql.connector.Error as exc:  # pragma: no cover - depends on DB
+        conn.rollback()
+        return json_response(False, f"Database error: {exc}", status=500)
+    finally:
+        cursor.close()
+        conn.close()
+
+
+@app.route("/api/history/quiz", methods=["POST"])
+def log_quiz_history():
+    user_id = session.get("user_id")
+    if not user_id:
+        return json_response(False, "Authentication required.", status=401)
+
+    data = request.get_json() or {}
+    quiz_title = data.get("quiz_title")
+    score = data.get("score")
+    total_questions = data.get("total_questions")
+
+    missing = [field for field in ("quiz_title", "score", "total_questions") if data.get(field) is None]
+    if missing:
+        return json_response(False, f"Missing fields: {', '.join(missing)}", status=400)
+    if not str(quiz_title).strip():
+        return json_response(False, "Quiz title is required.", status=400)
+    try:
+        score = int(score)
+        total_questions = int(total_questions)
+    except (TypeError, ValueError):
+        return json_response(False, "Score and total_questions must be integers.", status=400)
+
+    timestamp = datetime.utcnow()
     conn = get_db_connection()
     cursor = conn.cursor()
     try:
         cursor.execute(
             """
-            INSERT INTO reading_progress (user_id, book_name, progress)
-            VALUES (%s, %s, %s)
-            ON DUPLICATE KEY UPDATE progress = %s
+            INSERT INTO quiz_history (user_id, quiz_title, score, total_questions, completed_at)
+            VALUES (%s, %s, %s, %s, %s)
             """,
-            (user_id, book_name, progress, progress),
+            (user_id, quiz_title, score, total_questions, timestamp),
         )
         conn.commit()
-        return jsonify({"message": "Progress saved"}), 200
-    except Exception as exc:  # pragma: no cover - depends on DB
-        print("DB Error:", exc)
-        return jsonify({"error": "Database error"}), 500
+        entry = {
+            "type": "quiz",
+            "quiz_title": quiz_title,
+            "score": score,
+            "total_questions": total_questions,
+            "completed_at": isoformat_utc(timestamp),
+        }
+        return json_response(True, "Quiz activity recorded.", {"entry": entry})
+    except mysql.connector.Error as exc:  # pragma: no cover - depends on DB
+        conn.rollback()
+        return json_response(False, f"Database error: {exc}", status=500)
     finally:
         cursor.close()
         conn.close()
@@ -693,22 +854,52 @@ def save_progress():
 
 @app.route("/api/get_progress", methods=["GET"])
 def get_progress():
+    return reading_history_response()
+
+
+@app.route("/api/history/reading", methods=["GET"])
+def history_reading():
+    return reading_history_response()
+
+
+def reading_history_response():
     user_id = session.get("user_id")
     if not user_id:
-        return jsonify({"error": "Not logged in"}), 401
+        return json_response(False, "Authentication required.", status=401)
 
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
     try:
-        cursor.execute(
-            "SELECT book_name, progress FROM reading_progress WHERE user_id = %s",
-            (user_id,),
-        )
-        rows = cursor.fetchall()
-        return jsonify(rows), 200
-    except Exception as exc:  # pragma: no cover - depends on DB
-        print("DB Error:", exc)
-        return jsonify({"error": "Database error"}), 500
+        history_entries = fetch_reading_history_entries(cursor, user_id)
+        response_history = [
+            {"book_name": entry["book_name"], "last_read_at": entry["last_read_at"]}
+            for entry in history_entries
+        ]
+        return json_response(True, "Reading history fetched.", {"history": response_history})
+    except mysql.connector.Error as exc:  # pragma: no cover - depends on DB
+        return json_response(False, f"Database error: {exc}", status=500)
+    finally:
+        cursor.close()
+        conn.close()
+
+
+@app.route("/api/history", methods=["GET"])
+def unified_history():
+    user_id = session.get("user_id")
+    if not user_id:
+        return json_response(False, "Authentication required.", status=401)
+
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+    try:
+        entries = fetch_reading_history_entries(cursor, user_id)
+        entries.extend(fetch_quiz_history_entries(cursor, user_id))
+        entries.sort(key=lambda item: item.get("occurred_at") or "", reverse=True)
+        for entry in entries:
+            entry.pop("occurred_at", None)
+        return json_response(True, "History fetched.", {"history": entries})
+    except mysql.connector.Error as exc:  # pragma: no cover - depends on DB
+        return json_response(False, f"Database error: {exc}", status=500)
     finally:
         cursor.close()
         conn.close()

@@ -364,11 +364,26 @@ function endQuiz() {
     <button onclick="location.reload()" class="next-btn">Play Again</button>
   `;
   subtitle.textContent = 'Keep it up!';
+  logQuizCompletion(title.textContent, score, currentQuestions.length);
+}
 
-const history = JSON.parse(localStorage.getItem("userHistory")) || [];
-const now = new Date().toLocaleString();
-history.unshift(`[${now}] Completed quiz: ${title.textContent} — Score: ${score}/${currentQuestions.length}`);
-if (history.length > 10) history.pop(); 
-localStorage.setItem("userHistory", JSON.stringify(history));
-
+function logQuizCompletion(quizTitle, quizScore, totalQuestions) {
+  fetch("/api/history/quiz", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      quiz_title: quizTitle,
+      score: quizScore,
+      total_questions: totalQuestions
+    })
+  })
+    .then(res => res.json())
+    .then(payload => {
+      if (!payload || !payload.success) {
+        throw new Error(payload?.message || "Failed to record quiz result.");
+      }
+    })
+    .catch(err => {
+      console.error("❌ failed logging quiz activity:", err);
+    });
 }

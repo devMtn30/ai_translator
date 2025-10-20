@@ -1,5 +1,5 @@
 // ---------------------------------------------
-// reader.js (Flask 세션 기반 진행률 표시)
+// reader.js (Reader last-read timestamp sync)
 // ---------------------------------------------
 
 // 사이드바
@@ -18,19 +18,34 @@ document.querySelectorAll(".read-btn").forEach(btn => {
   });
 });
 
-// 📡 서버에서 현재 계정의 진행률 불러오기
+const cardLookup = Array.from(document.querySelectorAll(".book-card")).reduce((acc, card) => {
+  const file = (card.dataset.file || "").toLowerCase();
+  if (file) acc[file] = card;
+  return acc;
+}, {});
+
+// 📡 서버에서 최근 읽기 이력 불러오기
 fetch("/api/get_progress")
   .then(res => res.json())
-  .then(data => {
-    data.forEach(item => {
-      const card = Array.from(document.querySelectorAll(".book-card"))
-        .find(c => c.dataset.file.toLowerCase() === item.book_name.toLowerCase());
-      if (card) {
-        const progressBar = card.querySelector("progress");
-        const progressText = card.querySelector(".progress-text");
-        progressBar.value = item.progress;
-        progressText.textContent = item.progress + "%";
-      }
+  .then(payload => {
+    if (!payload || !payload.success) {
+      throw new Error(payload?.message || "Unknown error");
+    }
+    const history = (payload.data && payload.data.history) || [];
+    history.forEach(entry => {
+      const key = (entry.book_name || "").toLowerCase();
+      const card = cardLookup[key];
+      if (!card) return;
+      const label = card.querySelector("[data-last-read]");
+      if (!label) return;
+      label.textContent = formatLastRead(entry.last_read_at);
     });
   })
-  .catch(err => console.error("❌ faild loading:", err));
+  .catch(err => console.error("❌ failed loading reading history:", err));
+
+function formatLastRead(isoString) {
+  if (!isoString) return "Last read: Unknown";
+  const parsed = new Date(isoString);
+  if (Number.isNaN(parsed.getTime())) return "Last read: Unknown";
+  return `Last read: ${parsed.toLocaleString()}`;
+}
