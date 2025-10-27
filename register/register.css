@@ -65,8 +65,57 @@ form input, form select {
   transition: background-color 0.2s ease;
 }
 
+.btn-register:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background-color: #444;
+}
+
 .btn-register:hover {
   background-color: #333;
+}
+
+.btn-secondary {
+  width: 100%;
+  padding: 12px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #000;
+  background-color: #f1f1f1;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  cursor: pointer;
+  margin-bottom: 18px;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.btn-secondary:hover {
+  background-color: #e4e4e4;
+}
+
+.btn-secondary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.verification-section {
+  margin-bottom: 18px;
+}
+
+.verification-section input {
+  font-weight: 600;
+  letter-spacing: 4px;
+  text-align: center;
+}
+
+.code-hint {
+  font-size: 12px;
+  color: #666;
+  margin-top: 6px;
+}
+
+.hidden {
+  display: none !important;
 }
 
 .switch-text {

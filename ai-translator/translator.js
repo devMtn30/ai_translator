@@ -17,6 +17,8 @@ closeBtn.addEventListener("click", () => {
 const input = document.getElementById("inputText");
 const result = document.getElementById("resultBox");
 const audioPlayer = document.getElementById("audioPlayer");
+const sourceLanguage = document.getElementById("sourceLanguage");
+const targetLanguage = document.getElementById("targetLanguage");
 
 const chatBtn = document.getElementById("chatBtn");
 const voiceBtn = document.getElementById("voiceBtn"); // 🔊 Translate + Speak
@@ -62,15 +64,19 @@ chatBtn.addEventListener("click", async () => {
     result.innerText = "⚠ Please enter text.";
     return;
   }
+  const languages = getSelectedLanguages();
   result.innerText = "⏳ Translating...";
   try {
     const res = await fetch(`${API_BASE}/translate_explain`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text })
+      body: JSON.stringify({ text, ...languages })
     });
     const data = await res.json();
-    result.innerText = data.translation || "⚠ Error: " + data.error;
+    if (!res.ok) {
+      throw new Error(data.error || `Request failed (${res.status})`);
+    }
+    result.innerText = formatExplainOutput(languages, data.translation, data.explanation);
   } catch (err) {
     result.innerText = "❌ Server error: " + err.message;
   }
@@ -78,6 +84,7 @@ chatBtn.addEventListener("click", async () => {
 
 // -------------------- 2) Translate + Speak --------------------
 voiceBtn.addEventListener("click", () => {
+  const languages = getSelectedLanguages();
   handleRecordingFlow(voiceBtn, {
     activeLabel: "⏹ Stop",
     introMessage: "🎙 Speak now to translate.",
@@ -85,9 +92,9 @@ voiceBtn.addEventListener("click", () => {
       hideAudioPlayer();
       result.innerText = "⏳ Recognizing speech...";
       try {
-        const translation = await transcribeAndTranslate(audioBlob);
-        const { original, translatedText } = translation;
-        result.innerText = formatVoiceResult(original, translatedText);
+        const translation = await transcribeAndTranslate(audioBlob, languages);
+        const { original, translatedText, explanation } = translation;
+        result.innerText = formatVoiceResult(original, languages, translatedText, explanation);
         await maybePlayTts(translatedText);
       } catch (err) {
         console.error("❌ Voice translate failed:", err);
@@ -99,6 +106,7 @@ voiceBtn.addEventListener("click", () => {
 
 // -------------------- 3) Speak + Translate (Explain + optional TTS) --------------------
 micBtn.addEventListener("click", () => {
+  const languages = getSelectedLanguages();
   handleRecordingFlow(micBtn, {
     activeLabel: "⏹ Stop",
     introMessage: "🎙 Speak now... tap stop when finished.",
@@ -106,9 +114,9 @@ micBtn.addEventListener("click", () => {
       hideAudioPlayer();
       result.innerText = "⏳ Recognizing speech...";
       try {
-        const translation = await transcribeAndTranslate(audioBlob);
-        const { original, translatedText } = translation;
-        result.innerText = formatVoiceResult(original, translatedText);
+        const translation = await transcribeAndTranslate(audioBlob, languages);
+        const { original, translatedText, explanation } = translation;
+        result.innerText = formatVoiceResult(original, languages, translatedText, explanation);
         await maybePlayTts(translatedText);
       } catch (err) {
         console.error("❌ Speak+Translate failed:", err);
@@ -119,14 +127,16 @@ micBtn.addEventListener("click", () => {
 });
 
 // -------------------- Shared Voice Utilities --------------------
-function formatVoiceResult(original, translationText) {
+function formatVoiceResult(original, languages, translationText, explanationText) {
   const recognized = original ? `Recognized: ${original}\n\n` : "";
-  return `${recognized}${translationText || "⚠ No translation received."}`;
+  return recognized + formatExplainOutput(languages, translationText, explanationText);
 }
 
-async function transcribeAndTranslate(audioBlob) {
+async function transcribeAndTranslate(audioBlob, languages) {
   const formData = new FormData();
   formData.append("file", audioBlob, "speech.webm");
+  formData.append("source_language", languages.source_language);
+  formData.append("target_language", languages.target_language);
   const response = await fetch(`${API_BASE}/stt_explain`, { method: "POST", body: formData });
   let payload = {};
   try {
@@ -140,6 +150,7 @@ async function transcribeAndTranslate(audioBlob) {
   return {
     original: payload.original || "",
     translatedText: payload.translation || "",
+    explanation: payload.explanation || "",
   };
 }
 
@@ -259,4 +270,23 @@ function resetButton(button, idleLabel) {
   if (!button) return;
   button.dataset.recording = "false";
   button.textContent = idleLabel;
+}
+
+function getSelectedLanguages() {
+  return {
+    source_language: (sourceLanguage?.value || "Auto").trim(),
+    target_language: (targetLanguage?.value || "Tagalog").trim(),
+  };
+}
+
+function formatExplainOutput(languages, translationText, explanationText) {
+  const from = languages.source_language;
+  const to = languages.target_language;
+  const translation =
+    translationText && translationText.trim() ? translationText.trim() : "⚠ No translation received.";
+  const explanation =
+    explanationText && explanationText.trim()
+      ? `\n\nExplanation: ${explanationText.trim()}`
+      : "";
+  return `${from} → ${to}\n\n${translation}${explanation}`;
 }

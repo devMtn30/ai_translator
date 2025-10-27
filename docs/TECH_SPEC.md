@@ -29,8 +29,9 @@
 ### 4.1 Authentication & Profile
 | Method | Endpoint | Description |
 | --- | --- | --- |
-| `POST` | `/api/register` | Create user; sends verification email containing token URL. |
-| `GET` | `/api/verify/<token>` | Activate account; token expires after 24 hours. |
+| `POST` | `/api/register/send-code` | Validate signup details, generate a 6-digit code, and email it to the user (alias: `/api/register`). |
+| `POST` | `/api/register/verify-code` | Confirm the emailed code and create a verified user record immediately. |
+| `GET` | `/api/verify/<token>` | Legacy link-based verification (kept for backward compatibility). |
 | `POST` | `/api/login` | Authenticate; sets session cookie; returns user summary. |
 | `POST` | `/api/forgot` | Request password reset; sends token link. |
 | `POST` | `/api/reset/<token>` | Validate token and set new password (requires new != old). |
@@ -38,18 +39,30 @@
 | `PUT` | `/api/profile/update` | Update profile fields (firstname, lastname, year, student_id, gender). |
 | `GET` | `/api/profile/<email>` | Fetch profile by email; restricted to owner/admin. |
 
-**Signup Request Example**
+**Signup Flow Examples**
+
+Step 1 – request verification code:
 ```json
 {
   "email": "student@example.com",
   "password": "Str0ngPass!",
   "firstname": "Ana",
   "lastname": "Santos",
-  "student_id": "2025-001",
+  "student_id": "02000123456",
   "year": "Grade 10",
   "gender": "F"
 }
 ```
+
+Step 2 – verify code and create account:
+```json
+{
+  "email": "student@example.com",
+  "code": "483192"
+}
+```
+
+- Verification codes expire after 15 minutes; changing any signup details requires requesting a fresh code.
 
 **Common Response Schema**
 ```json
@@ -67,23 +80,15 @@
 ### 4.3 Translation & TTS
 | Method | Endpoint | Behavior |
 | --- | --- | --- |
-| `POST` | `/translate_simple` | Request body: `{ "text": "Hello world" }`; returns translations in Tagalog, Cebuano, Kapampangan, Bicolan, Waray, Hiligaynon, English following strict prompt. |
-| `POST` | `/translate_explain` | Enhanced mode (if needed) with additional context. |
-| `POST` | `/tts` | Body: `{ "language": "Tagalog", "text": "Kamusta" }`; returns audio stream URL or base64. |
+| `POST` | `/translate_simple` | Body: `{ "text": "Hello", "source_language": "English", "target_language": "Tagalog" }`; returns only the translated string. |
+| `POST` | `/translate_explain` | Body: `{ "text": "Hello", "source_language": "Auto", "target_language": "Tagalog" }`; returns the translation plus a short usage explanation. |
+| `POST` | `/tts` | Body: `{ "text": "Kamusta" }`; streams generated audio using the default OpenAI voice. |
 
 **OpenAI Prompt Contract**
 ```
-You are a strict translation engine.
-Always return translations in exactly 7 target languages, each clearly labeled:
-Tagalog: ...
-Cebuano: ...
-Kapampangan: ...
-Bicolan: ...
-Waray: ...
-Hiligaynon: ...
-English: ...
-Do not use * letter.
-Do not add explanations or extra sentences. Only output in this exact labeled format.
+You are an accurate translation engine similar to Google Translate.
+Translate the user text from <source_language> to <target_language>.
+Return only the translated text with no additional commentary.
 ```
 
 ### 4.4 Quiz System
@@ -115,6 +120,7 @@ Admin access is guarded purely on the client: `admin.html` prompts for a demo pa
 | --- | --- | --- |
 | `users` | Core user accounts | `id (PK)`, `email (unique)`, `password_hash`, `firstname`, `lastname`, `student_id`, `year_level`, `gender`, `profile_image_path`, `created_at`, `verified_at` |
 | `email_verification_tokens` | Signup verification | `id`, `user_id`, `token`, `expires_at`, `consumed_at` |
+| `pending_registrations` | Staged signup data awaiting code confirmation | `email`, `student_id`, `password_hash`, `verification_code`, `expires_at`, `attempts` |
 | `password_reset_tokens` | Password reset flow | `id`, `user_id`, `token`, `expires_at`, `consumed_at` |
 | `reading_progress` | Last-read state per book | `id`, `user_id`, `book_name`, `page`, `updated_at` |
 | `quizzes` | Quiz metadata | `id`, `title`, `description`, `language`, `is_active`, `created_by` |
@@ -159,6 +165,7 @@ CREATE TABLE users (
 - `OPENAI_API_KEY`
 - `MYSQL_HOST`, `MYSQL_USER`, `MYSQL_PASSWORD`, `MYSQL_DB`
 - `SECRET_KEY`
+- `REGISTRATION_CODE_EXPIRY_MINUTES` (optional, defaults to 15)
 - `TTS_PROVIDER` (`web`, `gtts`, `pyttsx3`)
 - TLS certificate paths configurable via `.env` to replace hard-coded Windows paths.
 - Logging: enable Flask logging + separate audit log for admin changes (`/logs/admin.log`).

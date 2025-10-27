@@ -1,4 +1,6 @@
 import os
+import random
+import re
 import uuid
 from datetime import datetime, timedelta
 from urllib.parse import unquote
@@ -13,7 +15,7 @@ from openai import OpenAI
 
 load_dotenv()
 
-app = Flask(__name__, static_folder=".", static_url_path="")
+app = Flask(__name__, static_folder="www", static_url_path="")
 CORS(app)
 bcrypt = Bcrypt(app)
 
@@ -45,6 +47,8 @@ PROFILE_UPLOAD_SUBDIR = os.getenv("PROFILE_UPLOAD_SUBDIR", "uploads/profile")
 PROFILE_UPLOAD_FOLDER = os.path.abspath(os.path.join(app.root_path, PROFILE_UPLOAD_SUBDIR))
 ALLOWED_PROFILE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".gif", ".webp"}
 MAX_PROFILE_IMAGE_BYTES = int(os.getenv("PROFILE_UPLOAD_MAX_BYTES", 5 * 1024 * 1024))
+REGISTRATION_CODE_EXPIRY_MINUTES = int(os.getenv("REGISTRATION_CODE_EXPIRY_MINUTES", 15))
+PASSWORD_POLICY = re.compile(r"^(?=.*[A-Za-z])(?=.*[!@#$%^&*(),.?':{}|<>]).{8,}$")
 
 os.makedirs(PROFILE_UPLOAD_FOLDER, exist_ok=True)
 
@@ -1012,6 +1016,24 @@ TABLE_DEFINITIONS = [
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         CONSTRAINT fk_email_tokens_user FOREIGN KEY (user_id)
             REFERENCES users(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    """,
+    """
+    CREATE TABLE IF NOT EXISTS pending_registrations (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        email VARCHAR(255) NOT NULL UNIQUE,
+        student_id VARCHAR(64) NOT NULL UNIQUE,
+        firstname VARCHAR(100) NOT NULL,
+        lastname VARCHAR(100) NOT NULL,
+        year VARCHAR(50) NOT NULL,
+        gender VARCHAR(20) NOT NULL,
+        password_hash VARCHAR(255) NOT NULL,
+        verification_code VARCHAR(10) NOT NULL,
+        expires_at DATETIME NOT NULL,
+        attempts INT DEFAULT 0,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_pending_expires (expires_at)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     """,
     """
@@ -2365,51 +2387,127 @@ def serve_reset_page(token):
     return send_from_directory(os.path.join(app.static_folder, "forgot"), "newpassword.html")
 
 
-@app.route("/api/register", methods=["POST"])
-def register():
+def _sanitize_registration_payload(data):
+    return {
+        "firstname": (data.get("firstname") or "").strip(),
+        "lastname": (data.get("lastname") or "").strip(),
+        "student_id": (data.get("student_id") or "").strip(),
+        "email": (data.get("email") or "").strip().lower(),
+        "password": data.get("password") or "",
+        "year": (data.get("year") or "").strip(),
+        "gender": (data.get("gender") or "").strip(),
+    }
+
+
+def _generate_verification_code():
+    return f"{random.randint(0, 999999):06d}"
+
+
+def _send_registration_code_email(email, firstname, code):
+    greeting = firstname or "there"
+    msg = Message(
+        "Your PronoCoach verification code",
+        recipients=[email],
+        body=(
+            f"Hello {greeting},\n\n"
+            f"Use the following verification code to complete your PronoCoach registration:\n\n"
+            f"{code}\n\n"
+            f"This code will expire in {REGISTRATION_CODE_EXPIRY_MINUTES} minutes.\n"
+            "If you did not request this, you can safely ignore this email."
+        ),
+    )
+    mail.send(msg)
+
+
+def _process_registration_send_code():
     data = request.get_json() or {}
-    required_fields = ["email", "password", "firstname", "lastname", "student_id", "year", "gender"]
-    missing = [field for field in required_fields if not data.get(field)]
+    payload = _sanitize_registration_payload(data)
+
+    required_fields = ["firstname", "lastname", "student_id", "email", "password", "year", "gender"]
+    missing = [field for field in required_fields if not payload.get(field)]
     if missing:
         return json_response(False, f"Missing fields: {', '.join(missing)}", status=400)
 
-    hashed_password = bcrypt.generate_password_hash(data["password"]).decode("utf-8")
+    if not re.fullmatch(r"\d{11}", payload["student_id"]):
+        return json_response(False, "Student ID must be exactly 11 digits.", status=400)
+
+    if not PASSWORD_POLICY.match(payload["password"]):
+        return json_response(
+            False,
+            "Password must be at least 8 characters and contain at least 1 letter and 1 special character.",
+            status=400,
+        )
+
+    hashed_password = bcrypt.generate_password_hash(payload["password"]).decode("utf-8")
+    code = _generate_verification_code()
+    expires_at = datetime.utcnow() + timedelta(minutes=REGISTRATION_CODE_EXPIRY_MINUTES)
+
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
-    token = None
-
     try:
+        cursor.execute("SELECT id FROM users WHERE email = %s", (payload["email"],))
+        if cursor.fetchone():
+            return json_response(False, "This email is already registered.", status=400)
+
+        cursor.execute("SELECT id FROM users WHERE student_id = %s", (payload["student_id"],))
+        if cursor.fetchone():
+            return json_response(False, "This student ID is already registered.", status=400)
+
         cursor.execute(
             """
-            INSERT INTO users (firstname, lastname, year, student_id, gender, email, password, verified)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+            SELECT email
+            FROM pending_registrations
+            WHERE student_id = %s AND email <> %s
+            """,
+            (payload["student_id"], payload["email"]),
+        )
+        if cursor.fetchone():
+            return json_response(
+                False,
+                "This student ID already has a pending verification. Please use the original email or wait for it to expire.",
+                status=400,
+            )
+
+        cursor.execute(
+            """
+            INSERT INTO pending_registrations (
+                email, student_id, firstname, lastname, year, gender,
+                password_hash, verification_code, expires_at, attempts
+            )
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, 0)
+            ON DUPLICATE KEY UPDATE
+                student_id = VALUES(student_id),
+                firstname = VALUES(firstname),
+                lastname = VALUES(lastname),
+                year = VALUES(year),
+                gender = VALUES(gender),
+                password_hash = VALUES(password_hash),
+                verification_code = VALUES(verification_code),
+                expires_at = VALUES(expires_at),
+                attempts = 0,
+                updated_at = CURRENT_TIMESTAMP
             """,
             (
-                data["firstname"],
-                data["lastname"],
-                data["year"],
-                data["student_id"],
-                data["gender"],
-                data["email"],
+                payload["email"],
+                payload["student_id"],
+                payload["firstname"],
+                payload["lastname"],
+                payload["year"],
+                payload["gender"],
                 hashed_password,
-                False,
+                code,
+                expires_at,
             ),
         )
-        user_id = cursor.lastrowid
-        try:
-            token, _ = create_token(cursor, "email_verification_tokens", user_id, hours_valid=24)
-        except mysql.connector.Error:
-            token = str(uuid.uuid4())
-            expiry = datetime.utcnow() + timedelta(hours=24)
-            cursor.execute(
-                """
-                UPDATE users
-                SET verification_token = %s, verification_expiry = %s
-                WHERE id = %s
-                """,
-                (token, expiry, user_id),
-            )
+
+        _send_registration_code_email(payload["email"], payload["firstname"], code)
         conn.commit()
+        return json_response(
+            True,
+            "Verification code sent. Please check your email.",
+            {"expires_in_minutes": REGISTRATION_CODE_EXPIRY_MINUTES},
+            status=200,
+        )
     except mysql.connector.Error as exc:
         conn.rollback()
         if getattr(exc, "errno", None) == 1062:
@@ -2418,38 +2516,121 @@ def register():
                 return json_response(False, "This email is already registered.", status=400)
             if "student_id" in lowered:
                 return json_response(False, "This student ID is already registered.", status=400)
-        return json_response(False, f"Registration failed: {exc}", status=400)
-    else:
-        base_url = build_base_url()
-        verify_url = f"{base_url}/api/verify/{token}" if base_url else f"/api/verify/{token}"
-        msg = Message(
-            "Verify your PronoCoach account",
-            recipients=[data["email"]],
-            body=(
-                f"Hello {data['firstname']},\n\n"
-                "Welcome to PronoCoach!\n"
-                "Please verify your account by clicking the link below:\n"
-                f"{verify_url}\n\n"
-                "This link will expire in 24 hours."
+        return json_response(False, f"Unable to send verification code: {exc}", status=400)
+    except Exception as err:  # pragma: no cover - SMTP configuration dependent
+        conn.rollback()
+        return json_response(False, f"Failed to send verification email: {err}", status=500)
+    finally:
+        cursor.close()
+        conn.close()
+
+
+@app.route("/api/register/send-code", methods=["POST"])
+def register_send_code():
+    return _process_registration_send_code()
+
+
+@app.route("/api/register", methods=["POST"])
+def register():
+    return _process_registration_send_code()
+
+
+@app.route("/api/register/verify-code", methods=["POST"])
+def register_verify_code():
+    data = request.get_json() or {}
+    email = (data.get("email") or "").strip().lower()
+    code = (data.get("code") or "").strip()
+
+    if not email or not code:
+        return json_response(False, "Email and verification code are required.", status=400)
+
+    if not re.fullmatch(r"\d{6}", code):
+        return json_response(False, "Verification code must be exactly 6 digits.", status=400)
+
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+    try:
+        cursor.execute(
+            """
+            SELECT *
+            FROM pending_registrations
+            WHERE email = %s
+            """,
+            (email,),
+        )
+        pending = cursor.fetchone()
+        if not pending:
+            return json_response(False, "No pending registration found for this email. Please request a new code.", status=400)
+
+        if pending.get("expires_at") and pending["expires_at"] < datetime.utcnow():
+            cursor.execute("DELETE FROM pending_registrations WHERE id = %s", (pending["id"],))
+            conn.commit()
+            return json_response(False, "Verification code expired. Please request a new code.", status=400)
+
+        if pending.get("attempts", 0) >= 5:
+            cursor.execute("DELETE FROM pending_registrations WHERE id = %s", (pending["id"],))
+            conn.commit()
+            return json_response(False, "Too many invalid attempts. Please request a new code.", status=400)
+
+        if pending["verification_code"] != code:
+            cursor.execute(
+                "UPDATE pending_registrations SET attempts = attempts + 1, updated_at = CURRENT_TIMESTAMP WHERE id = %s",
+                (pending["id"],),
+            )
+            conn.commit()
+            return json_response(False, "Invalid verification code.", status=400)
+
+        cursor.execute("SELECT id FROM users WHERE email = %s", (pending["email"],))
+        if cursor.fetchone():
+            cursor.execute("DELETE FROM pending_registrations WHERE id = %s", (pending["id"],))
+            conn.commit()
+            return json_response(False, "This email is already registered.", status=400)
+
+        cursor.execute("SELECT id FROM users WHERE student_id = %s", (pending["student_id"],))
+        if cursor.fetchone():
+            cursor.execute("DELETE FROM pending_registrations WHERE id = %s", (pending["id"],))
+            conn.commit()
+            return json_response(False, "This student ID is already registered.", status=400)
+
+        cursor.execute(
+            """
+            INSERT INTO users (firstname, lastname, year, student_id, gender, email, password, verified, verified_at)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, 1, %s)
+            """,
+            (
+                pending["firstname"],
+                pending["lastname"],
+                pending["year"],
+                pending["student_id"],
+                pending["gender"],
+                pending["email"],
+                pending["password_hash"],
+                datetime.utcnow(),
             ),
         )
-        try:
-            mail.send(msg)
-        except Exception as err:  # pragma: no cover - SMTP configuration dependent
-            return json_response(
-                False,
-                f"Account created but failed to send verification email: {err}",
-                status=500,
-            )
+        cursor.execute("DELETE FROM pending_registrations WHERE id = %s", (pending["id"],))
+        conn.commit()
         user_summary = {
-            "email": data["email"],
-            "firstname": data["firstname"],
-            "lastname": data["lastname"],
-            "student_id": data["student_id"],
-            "year": data["year"],
-            "gender": data["gender"],
+            "email": pending["email"],
+            "firstname": pending["firstname"],
+            "lastname": pending["lastname"],
+            "student_id": pending["student_id"],
+            "year": pending["year"],
+            "gender": pending["gender"],
         }
-        return json_response(True, "Verification email sent. Please check your inbox.", {"user": user_summary}, status=201)
+        return json_response(True, "Registration complete. You can now log in.", {"user": user_summary}, status=201)
+    except mysql.connector.Error as exc:
+        conn.rollback()
+        if getattr(exc, "errno", None) == 1062:
+            lowered = str(exc).lower()
+            if "email" in lowered:
+                message = "This email is already registered."
+            elif "student_id" in lowered:
+                message = "This student ID is already registered."
+            else:
+                message = "Duplicate account detected."
+            return json_response(False, message, status=400)
+        return json_response(False, f"Registration failed: {exc}", status=400)
     finally:
         cursor.close()
         conn.close()
@@ -4032,64 +4213,105 @@ def unified_history():
 def translate_explain():
     data = request.get_json() or {}
     text = data.get("text", "")
+    source_language = data.get("source_language", "")
+    target_language = data.get("target_language", "")
     if not text:
         return jsonify({"error": "No text provided"}), 400
 
     try:
-        response = client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[
-                {
-                    "role": "system",
-                    "content": (
-                        "You are a helpful translation assistant.\n"
-                        "Always translate the user's input into 7 target languages:\n"
-                        " Tagalog, Cebuano, Kapampangan, Bicolan, Waray, Hiligaynon, English.\n"
-                        "Do not use the * character.\n"
-                        "After showing translations, add a short, simple explanation of how the phrase is typically used.\n"
-                        "Do not refuse. No matter the input language, always translate into the 7 target languages."
-                    ),
-                },
-                {"role": "user", "content": text},
-            ],
-        )
-        translation = response.choices[0].message.content
-        return jsonify({"translation": translation})
+        translation, explanation = perform_explain_translation(text, source_language, target_language)
+        return jsonify({"translation": translation, "explanation": explanation})
     except Exception as exc:  # pragma: no cover - OpenAI dependency
         return jsonify({"error": str(exc)}), 500
+
+
+def perform_simple_translation(text: str, source_language: str, target_language: str) -> str:
+    """Translate text with language context for the simple translator routes."""
+    source = (source_language or "").strip() or "English"
+    target = (target_language or "").strip() or "Tagalog"
+    response = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[
+            {
+                "role": "system",
+                "content": (
+                    "You are an accurate translation engine similar to Google Translate.\n"
+                    f"Translate user text from {source} to {target}.\n"
+                    "Return only the translated text with no additional commentary or formatting.\n"
+                    "Avoid using the * character unless it appears in the translation naturally."
+                ),
+            },
+            {
+                "role": "user",
+                "content": (
+                    f"Source language: {source}\n"
+                    f"Target language: {target}\n"
+                    f"Text: {text}"
+                ),
+            },
+        ],
+    )
+    return response.choices[0].message.content
+
+
+def parse_translation_response(raw_text: str) -> tuple[str, str]:
+    translation = ""
+    explanation = ""
+    for line in (raw_text or "").splitlines():
+        stripped = line.strip()
+        lowered = stripped.lower()
+        if lowered.startswith("translation:"):
+            translation = stripped.split(":", 1)[1].strip()
+        elif lowered.startswith("explanation:"):
+            explanation = stripped.split(":", 1)[1].strip()
+        elif not translation and stripped:
+            translation = stripped
+    translation = translation or (raw_text or "").strip()
+    return translation, explanation
+
+
+def perform_explain_translation(text: str, source_language: str, target_language: str) -> tuple[str, str]:
+    """Translate text with optional explanation while honoring selected languages."""
+    source_raw = (source_language or "").strip()
+    auto_detect = not source_raw or source_raw.lower() == "auto"
+    source = source_raw if source_raw else "Auto"
+    target = (target_language or "").strip() or "Tagalog"
+    system_instructions = (
+        "You are a helpful translation assistant similar to Google Translate but with brief tips.\n"
+        f"{'Detect the language of the user text before translating it.' if auto_detect else f'The user text is in {source}.'}\n"
+        f"Translate the text into {target}.\n"
+        "Respond using exactly two lines:\n"
+        "Translation: <translated text in the target language>\n"
+        "Explanation: <a short usage tip in English>\n"
+        "Do not add extra text, emojis, or markdown. Avoid the * character unless required by the translation."
+    )
+    user_prompt = (
+        f"Source language: {source}\n"
+        f"Target language: {target}\n"
+        f"Text: {text}"
+    )
+    response = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[
+            {"role": "system", "content": system_instructions},
+            {"role": "user", "content": user_prompt},
+        ],
+    )
+    raw = response.choices[0].message.content or ""
+    return parse_translation_response(raw)
 
 
 @app.route("/translate_simple", methods=["POST"])
 def translate_simple():
     data = request.get_json() or {}
     text = data.get("text", "")
+    source_language = data.get("source_language", "")
+    target_language = data.get("target_language", "")
     if not text:
         return jsonify({"error": "No text provided"}), 400
 
     try:
-        response = client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[
-                {
-                    "role": "system",
-                    "content": (
-                        "You are a strict translation engine.\n"
-                        "Always return translations in exactly 7 target languages, each clearly labeled:\n"
-                        " Tagalog: ...\n"
-                        " Cebuano: ...\n"
-                        " Kapampangan: ...\n"
-                        " Bicolan: ...\n"
-                        " Waray: ...\n"
-                        " Hiligaynon: ...\n"
-                        " English: ...\n"
-                        "Do not use the * character.\n"
-                        "Do not add explanations. Do not add extra sentences. Only output in this exact labeled format."
-                    ),
-                },
-                {"role": "user", "content": text},
-            ],
-        )
-        translation = response.choices[0].message.content
+        translation = perform_simple_translation(text, source_language, target_language)
         return jsonify({"translation": translation})
     except Exception as exc:  # pragma: no cover - OpenAI dependency
         return jsonify({"error": str(exc)}), 500
@@ -4118,31 +4340,16 @@ def stt_explain():
     if "file" not in request.files:
         return jsonify({"error": "No file uploaded"}), 400
     audio_file = request.files["file"]
+    source_language = request.form.get("source_language", "")
+    target_language = request.form.get("target_language", "")
     try:
         transcription = client.audio.transcriptions.create(
             model="gpt-4o-mini-transcribe",
             file=(audio_file.filename, audio_file.stream, audio_file.content_type),
         )
         text = transcription.text
-        response = client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[
-                {
-                    "role": "system",
-                    "content": (
-                        "You are a helpful translation assistant.\n"
-                        "Always translate the user's input into 7 target languages:\n"
-                        " Tagalog, Cebuano, Kapampangan, Bicolan, Waray, Hiligaynon, English.\n"
-                        "Do not use the * character.\n"
-                        "After showing translations, add a short, simple explanation of how the phrase is typically used.\n"
-                        "Do not refuse. No matter the input language, always translate into the 7 target languages."
-                    ),
-                },
-                {"role": "user", "content": text},
-            ],
-        )
-        translation = response.choices[0].message.content
-        return jsonify({"original": text, "translation": translation})
+        translation, explanation = perform_explain_translation(text, source_language, target_language)
+        return jsonify({"original": text, "translation": translation, "explanation": explanation})
     except Exception as exc:  # pragma: no cover - OpenAI dependency
         return jsonify({"error": str(exc)}), 500
 
@@ -4152,35 +4359,15 @@ def stt_simple():
     if "file" not in request.files:
         return jsonify({"error": "No file uploaded"}), 400
     audio_file = request.files["file"]
+    source_language = request.form.get("source_language", "")
+    target_language = request.form.get("target_language", "")
     try:
         transcription = client.audio.transcriptions.create(
             model="gpt-4o-mini-transcribe",
             file=(audio_file.filename, audio_file.stream, audio_file.content_type),
         )
         text = transcription.text
-        response = client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[
-                {
-                    "role": "system",
-                    "content": (
-                        "You are a strict translation engine.\n"
-                        "Always return translations in exactly 7 target languages, each clearly labeled:\n"
-                        " Tagalog: ...\n"
-                        " Cebuano: ...\n"
-                        " Kapampangan: ...\n"
-                        " Bicolan: ...\n"
-                        " Waray: ...\n"
-                        " Hiligaynon: ...\n"
-                        " English: ...\n"
-                        "Do not use the * character.\n"
-                        "Do not add explanations. Do not add extra sentences. Only output in this exact labeled format."
-                    ),
-                },
-                {"role": "user", "content": text},
-            ],
-        )
-        translation = response.choices[0].message.content
+        translation = perform_simple_translation(text, source_language, target_language)
         return jsonify({"original": text, "translation": translation})
     except Exception as exc:  # pragma: no cover - OpenAI dependency
         return jsonify({"error": str(exc)}), 500

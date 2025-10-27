@@ -49,6 +49,45 @@ body {
   margin-bottom: 20px;
 }
 
+.language-row {
+  width: 100%;
+  max-width: 500px;
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  margin-bottom: 15px;
+}
+
+.language-field {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.language-label {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+  letter-spacing: 0.5px;
+}
+
+.language-field select {
+  width: 100%;
+  padding: 10px;
+  border-radius: 10px;
+  border: none;
+  font-size: 16px;
+  outline: none;
+  background: #f5f5f5;
+}
+
+.language-arrow {
+  font-size: 22px;
+  line-height: 1;
+  padding-bottom: 8px;
+}
+
 /* 입력창 */
 textarea {
   width: 100%;

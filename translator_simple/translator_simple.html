@@ -19,6 +19,36 @@
   <main class="content">
     <h2 class="title">Basic Translation</h2>
 
+    <!-- 언어 선택 -->
+    <div class="language-row">
+      <label class="language-field">
+        <span class="language-label">From</span>
+        <select id="sourceLanguage">
+          <option value="Auto">Auto Detect</option>
+          <option value="English">English</option>
+          <option value="Tagalog">Tagalog</option>
+          <option value="Cebuano">Cebuano</option>
+          <option value="Kapampangan">Kapampangan</option>
+          <option value="Bicolano">Bicolano</option>
+          <option value="Waray">Waray</option>
+          <option value="Hiligaynon">Hiligaynon</option>
+        </select>
+      </label>
+      <span class="language-arrow">→</span>
+      <label class="language-field">
+        <span class="language-label">To</span>
+        <select id="targetLanguage">
+          <option value="Tagalog">Tagalog</option>
+          <option value="English">English</option>
+          <option value="Cebuano">Cebuano</option>
+          <option value="Kapampangan">Kapampangan</option>
+          <option value="Bicolano">Bicolano</option>
+          <option value="Waray">Waray</option>
+          <option value="Hiligaynon">Hiligaynon</option>
+        </select>
+      </label>
+    </div>
+
     <!-- 입력창 -->
     <textarea id="inputText" placeholder="Enter text..."></textarea>
 

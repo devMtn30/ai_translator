@@ -3,6 +3,8 @@ console.log("✅ translator_simple.js loaded");
 const input = document.getElementById("inputText");
 const result = document.getElementById("resultBox");
 const audioPlayer = document.getElementById("audioPlayer");
+const sourceLanguage = document.getElementById("sourceLanguage");
+const targetLanguage = document.getElementById("targetLanguage");
 
 const chatBtn = document.getElementById("chatBtn");
 const voiceBtn = document.getElementById("voiceBtn");
@@ -46,14 +48,18 @@ chatBtn.addEventListener("click", async () => {
     result.innerText = "⚠ Please enter text.";
     return;
   }
+  const languages = getSelectedLanguages();
   try {
     const res = await fetch(`${API_BASE}/translate_simple`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text })
+      body: JSON.stringify({ text, ...languages })
     });
     const data = await res.json();
-    result.innerText = data.translation || "⚠ Error: " + data.error;
+    if (!res.ok) {
+      throw new Error(data.error || `Request failed (${res.status})`);
+    }
+    result.innerText = formatTranslationOutput(languages, data.translation);
   } catch (err) {
     result.innerText = "❌ Server error: " + err.message;
   }
@@ -66,16 +72,20 @@ voiceBtn.addEventListener("click", async () => {
     result.innerText = "⚠ Please enter text.";
     return;
   }
+  const languages = getSelectedLanguages();
   try {
     hideAudioPlayer();
     const res1 = await fetch(`${API_BASE}/translate_simple`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text })
+      body: JSON.stringify({ text, ...languages })
     });
     const data1 = await res1.json();
+    if (!res1.ok) {
+      throw new Error(data1.error || `Request failed (${res1.status})`);
+    }
     const translatedText = data1.translation;
-    result.innerText = translatedText;
+    result.innerText = formatTranslationOutput(languages, translatedText);
 
     await playTts(translatedText);
   } catch (err) {
@@ -99,6 +109,9 @@ micBtn.addEventListener("click", async () => {
       const audioBlob = new Blob(audioChunks, { type: "audio/webm" });
       const formData = new FormData();
       formData.append("file", audioBlob, "speech.webm");
+      const languages = getSelectedLanguages();
+      formData.append("source_language", languages.source_language);
+      formData.append("target_language", languages.target_language);
       result.innerText = "⏳ Recognizing speech...";
       try {
         const res = await fetch(`${API_BASE}/stt_simple`, { method: "POST", body: formData });
@@ -109,7 +122,8 @@ micBtn.addEventListener("click", async () => {
           throw new Error(data.error || `Request failed (${res.status})`);
         }
         const recognized = original ? `Recognized: ${original}\n\n` : "";
-        result.innerText = recognized + (translation || "⚠ No translation received.");
+        result.innerText =
+          recognized + formatTranslationOutput(languages, translation || "⚠ No translation received.");
         await playTts(translation);
       } catch (err) {
         result.innerText = "❌ Error: " + err.message;
@@ -156,4 +170,20 @@ function hideAudioPlayer() {
   audioPlayer.removeAttribute("src");
   audioPlayer.style.display = "none";
   audioPlayer.load();
+}
+
+function getSelectedLanguages() {
+  return {
+    source_language: (sourceLanguage?.value || "English").trim(),
+    target_language: (targetLanguage?.value || "Tagalog").trim(),
+  };
+}
+
+function formatTranslationOutput(languages, translation) {
+  const from = languages.source_language;
+  const to = languages.target_language;
+  if (!translation) {
+    return "⚠ No translation received.";
+  }
+  return `${from} → ${to}\n\n${translation}`;
 }

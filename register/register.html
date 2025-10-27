@@ -56,8 +56,24 @@
           <option value="Female">Female</option>
         </select>
 
+        <!-- Send verification code -->
+        <button type="button" id="sendCodeBtn" class="btn-secondary">Send Verification Code</button>
+
+        <div id="verificationSection" class="verification-section hidden">
+          <label for="verificationCode">Verification Code *</label>
+          <input
+            type="text"
+            id="verificationCode"
+            maxlength="6"
+            pattern="[0-9]{6}"
+            placeholder="Enter 6-digit code"
+            autocomplete="one-time-code"
+          >
+          <p class="code-hint">We sent a 6-digit code to your email. The code expires in 15 minutes.</p>
+        </div>
+
         <!-- Register Button -->
-        <button type="submit" class="btn-register">Register</button>
+        <button type="submit" class="btn-register" disabled>Complete Registration</button>
       </form>
 
       <p class="switch-text">
