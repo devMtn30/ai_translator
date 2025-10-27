@@ -90,6 +90,18 @@
       </div>
       <div id="quizList" class="quiz-list"></div>
     </section>
+
+    <section class="panel">
+      <div class="panel__header">
+        <h3>Module Courses</h3>
+        <div class="panel__actions">
+          <select id="moduleCourseFilter"></select>
+          <button class="panel__refresh" id="refreshModuleCoursesBtn">Refresh</button>
+          <button class="panel__primary" id="createModuleCourseBtn">New Course</button>
+        </div>
+      </div>
+      <div id="moduleCourseList" class="module-course-list"></div>
+    </section>
   </main>
 
   <aside id="sidebar" class="sidebar">
@@ -100,6 +112,7 @@
         <li><a href="../profile/profile.html"><img src="../assets/icons/profile.png" class="icon" alt=""> Profile</a></li>
         <li><a href="../ai-translator/translator.html"><img src="../assets/icons/ai.png" class="icon" alt=""> AI Translator</a></li>
         <li><a href="../translator_simple/translator_simple.html"><img src="../assets/icons/ai.png" class="icon" alt=""> Simple Translator</a></li>
+        <li><a href="../modules/modules.html"><img src="../assets/icons/read.png" class="icon" alt=""> Modules</a></li>
         <li><a href="../quiz/quiz.html"><img src="../assets/icons/quiz.png" class="icon" alt=""> Quiz</a></li>
         <li><a href="../reader/reader.html"><img src="../assets/icons/read.png" class="icon" alt=""> Reader</a></li>
         <li><a href="admin.html" class="active"><img src="../assets/icons/history.png" class="icon" alt=""> Admin</a></li>
@@ -107,6 +120,65 @@
       </ul>
     </div>
   </aside>
+
+  <div id="moduleCourseModal" class="modal hidden" role="dialog" aria-modal="true">
+    <div class="modal__dialog">
+      <div class="modal__header">
+        <h3 class="modal__title" id="moduleCourseModalTitle">Create Module Course</h3>
+        <button type="button" class="modal__close" id="moduleCourseCloseBtn" aria-label="Close">&times;</button>
+      </div>
+      <form id="moduleCourseForm" class="module-form">
+        <div class="module-form__grid">
+          <label>Module
+            <select id="moduleCourseModuleId" required></select>
+          </label>
+          <label>Course Title
+            <input type="text" id="moduleCourseTitle" required>
+          </label>
+          <label>Slug (optional)
+            <input type="text" id="moduleCourseSlug" placeholder="auto-generated if blank">
+          </label>
+          <label>Order (optional)
+            <input type="number" id="moduleCourseOrder" min="0">
+          </label>
+          <label>Handout Label
+            <input type="text" id="moduleCourseHandout">
+          </label>
+          <label>Page Range
+            <input type="text" id="moduleCoursePages">
+          </label>
+          <label>PDF File Name
+            <input type="text" id="moduleCourseBookName" placeholder="e.g. cebuano.pdf">
+          </label>
+          <label>PDF Display Name
+            <input type="text" id="moduleCourseBookDisplay">
+          </label>
+          <label>Estimated Minutes
+            <input type="number" id="moduleCourseMinutes" min="0" step="1">
+          </label>
+        </div>
+
+        <div class="module-form__grid">
+          <label>Quiz Title
+            <input type="text" id="moduleCourseQuizTitle" required>
+          </label>
+          <label>Quiz Description
+            <textarea id="moduleCourseQuizDescription"></textarea>
+          </label>
+        </div>
+
+        <div class="question-actions">
+          <button type="button" id="addQuestionBtn">Add Question</button>
+        </div>
+        <div id="moduleQuestionList" class="module-question-list"></div>
+
+        <div class="modal__footer">
+          <button type="button" class="secondary" id="moduleCourseCancelBtn">Cancel</button>
+          <button type="submit" class="primary" id="moduleCourseSubmitBtn">Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="admin.js"></script>

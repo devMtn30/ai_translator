@@ -24,6 +24,28 @@ const usersTableBody = document.getElementById("usersTableBody");
 const quizList = document.getElementById("quizList");
 const quizChartCanvas = document.getElementById("quizChart");
 const signupChartCanvas = document.getElementById("signupChart");
+const moduleCourseList = document.getElementById("moduleCourseList");
+const moduleCourseFilter = document.getElementById("moduleCourseFilter");
+const refreshModuleCoursesBtn = document.getElementById("refreshModuleCoursesBtn");
+const createModuleCourseBtn = document.getElementById("createModuleCourseBtn");
+const moduleCourseModal = document.getElementById("moduleCourseModal");
+const moduleCourseModalTitle = document.getElementById("moduleCourseModalTitle");
+const moduleCourseCloseBtn = document.getElementById("moduleCourseCloseBtn");
+const moduleCourseCancelBtn = document.getElementById("moduleCourseCancelBtn");
+const moduleCourseForm = document.getElementById("moduleCourseForm");
+const moduleCourseModuleId = document.getElementById("moduleCourseModuleId");
+const moduleCourseTitle = document.getElementById("moduleCourseTitle");
+const moduleCourseSlug = document.getElementById("moduleCourseSlug");
+const moduleCourseOrder = document.getElementById("moduleCourseOrder");
+const moduleCourseHandout = document.getElementById("moduleCourseHandout");
+const moduleCoursePages = document.getElementById("moduleCoursePages");
+const moduleCourseBookName = document.getElementById("moduleCourseBookName");
+const moduleCourseBookDisplay = document.getElementById("moduleCourseBookDisplay");
+const moduleCourseMinutes = document.getElementById("moduleCourseMinutes");
+const moduleCourseQuizTitle = document.getElementById("moduleCourseQuizTitle");
+const moduleCourseQuizDescription = document.getElementById("moduleCourseQuizDescription");
+const moduleQuestionList = document.getElementById("moduleQuestionList");
+const addQuestionBtn = document.getElementById("addQuestionBtn");
 
 let quizChartInstance = null;
 let signupChartInstance = null;
@@ -34,6 +56,10 @@ const state = {
   quizzes: [],
   analytics: null,
   search: "",
+  moduleCourses: [],
+  selectedModuleId: "all",
+  editingModuleCourseId: null,
+  questionCounter: 0,
 };
 
 menuBtn.addEventListener("click", () => sidebar.classList.add("open"));
@@ -88,6 +114,24 @@ quizList.addEventListener("click", event => {
   }
 });
 
+refreshModuleCoursesBtn?.addEventListener("click", loadModuleCourses);
+createModuleCourseBtn?.addEventListener("click", () => openModuleCourseModal("create"));
+moduleCourseFilter?.addEventListener("change", event => {
+  state.selectedModuleId = event.target.value || "all";
+  renderModuleCourseList();
+});
+moduleCourseList?.addEventListener("click", handleModuleCourseListClick);
+moduleCourseCloseBtn?.addEventListener("click", closeModuleCourseModal);
+moduleCourseCancelBtn?.addEventListener("click", closeModuleCourseModal);
+moduleCourseForm?.addEventListener("submit", handleModuleCourseSubmit);
+addQuestionBtn?.addEventListener("click", () => addQuestionBlock());
+
+moduleCourseModal?.addEventListener("click", event => {
+  if (event.target === moduleCourseModal) {
+    closeModuleCourseModal();
+  }
+});
+
 document.addEventListener("DOMContentLoaded", () => {
   passwordInput.focus();
 });
@@ -111,7 +155,13 @@ function handleUnlock() {
 }
 
 function initializeDashboard() {
-  Promise.all([loadAnalytics(), loadOnline(), loadUsers(state.search), loadQuizzes()]).catch(err => {
+  Promise.all([
+    loadAnalytics(),
+    loadOnline(),
+    loadUsers(state.search),
+    loadQuizzes(),
+    loadModuleCourses(),
+  ]).catch(err => {
     console.error("Dashboard init failed:", err);
   });
 }
@@ -158,6 +208,384 @@ async function loadQuizzes() {
   } catch (error) {
     console.error("Failed to load quizzes", error);
     showAlert("Unable to load quizzes.");
+  }
+}
+
+async function loadModuleCourses() {
+  try {
+    const { data } = await fetchJSON("/api/admin/module_courses");
+    state.moduleCourses = data.modules || [];
+    renderModuleFilterOptions();
+    renderModuleCourseList();
+  } catch (error) {
+    console.error("Failed to load module courses", error);
+    showAlert("Unable to load module courses.");
+  }
+}
+
+function renderModuleFilterOptions() {
+  if (!moduleCourseFilter) return;
+  const previous = state.selectedModuleId || "all";
+  moduleCourseFilter.innerHTML = "";
+
+  const allOption = document.createElement("option");
+  allOption.value = "all";
+  allOption.textContent = "All Modules";
+  moduleCourseFilter.appendChild(allOption);
+
+  state.moduleCourses.forEach(module => {
+    const option = document.createElement("option");
+    option.value = String(module.id);
+    option.textContent = module.title || module.slug || `Module ${module.id}`;
+    moduleCourseFilter.appendChild(option);
+  });
+
+  const hasMatch = [...moduleCourseFilter.options].some(opt => opt.value === previous);
+  state.selectedModuleId = hasMatch ? previous : "all";
+  moduleCourseFilter.value = state.selectedModuleId;
+}
+
+function renderModuleCourseList() {
+  if (!moduleCourseList) return;
+  moduleCourseList.innerHTML = "";
+
+  if (!state.moduleCourses.length) {
+    moduleCourseList.innerHTML = '<p class="empty-state">No module courses found.</p>';
+    return;
+  }
+
+  const filteredModules = state.selectedModuleId === "all"
+    ? state.moduleCourses
+    : state.moduleCourses.filter(module => String(module.id) === String(state.selectedModuleId));
+
+  if (!filteredModules.length) {
+    moduleCourseList.innerHTML = '<p class="empty-state">No courses for the selected module.</p>';
+    return;
+  }
+
+  filteredModules.forEach(module => {
+    const courses = (module.courses || []).slice().sort((a, b) => {
+      const aIndex = a.order_index ?? 0;
+      const bIndex = b.order_index ?? 0;
+      return aIndex - bIndex;
+    });
+    courses.forEach(course => {
+      const card = document.createElement("article");
+      card.className = "module-course-card";
+
+      const handoutLabel = course.handout_label || "Handout";
+      const pdfName = course.book_display_name || course.book_name || "—";
+      const quizMeta = course.quiz || {};
+      const questionCount = quizMeta.question_count ?? (quizMeta.questions ? quizMeta.questions.length : 0) ?? 0;
+
+      card.innerHTML = `
+        <div class="module-course-card__header">
+          <div>
+            <span class="module-course-card__badge">${escapeHtml(module.title || module.slug || "Module")}</span>
+            <h4 class="module-course-card__title">${escapeHtml(course.title || "Untitled Course")}</h4>
+          </div>
+          <span class="module-course-card__badge">${escapeHtml(handoutLabel || "Handout")}</span>
+        </div>
+        <p class="module-course-card__meta">
+          PDF: ${escapeHtml(pdfName)}<br>
+          File: ${escapeHtml(course.book_name || "—") }<br>
+          Quiz: ${escapeHtml(quizMeta.title || "—")} (${questionCount} questions)
+        </p>
+        <div class="module-course-card__footer">
+          <button class="edit" data-action="edit" data-course-id="${course.id}">Edit</button>
+          <button class="delete" data-action="delete" data-course-id="${course.id}">Delete</button>
+        </div>
+      `;
+
+      moduleCourseList.appendChild(card);
+    });
+  });
+
+  if (!moduleCourseList.children.length) {
+    moduleCourseList.innerHTML = '<p class="empty-state">No courses for the selected module.</p>';
+  }
+}
+
+function handleModuleCourseListClick(event) {
+  const button = event.target.closest("button[data-action]");
+  if (!button) return;
+  const courseId = Number(button.dataset.courseId);
+  if (!courseId) return;
+
+  const action = button.dataset.action;
+  if (action === "edit") {
+    openModuleCourseModal("edit", courseId);
+  } else if (action === "delete") {
+    deleteModuleCourse(courseId);
+  }
+}
+
+async function openModuleCourseModal(mode, courseId) {
+  if (!moduleCourseModal || !moduleCourseForm) return;
+  state.questionCounter = 0;
+  populateModuleCourseSelect();
+  moduleCourseForm.reset();
+  moduleCourseOrder.value = "";
+  moduleCourseSlug.value = "";
+  moduleQuestionList.innerHTML = "";
+
+  if (mode === "edit") {
+    moduleCourseModalTitle.textContent = "Edit Module Course";
+    try {
+      const detail = await loadModuleCourseDetail(courseId);
+      if (!detail) {
+        showAlert("Module course not found.");
+        return;
+      }
+      state.editingModuleCourseId = courseId;
+      moduleCourseModuleId.value = String(detail.module_id);
+      moduleCourseTitle.value = detail.title || "";
+      moduleCourseSlug.value = detail.slug || "";
+      moduleCourseOrder.value = detail.order_index ?? "";
+      moduleCourseHandout.value = detail.handout_label || "";
+      moduleCoursePages.value = detail.page_range || "";
+      moduleCourseBookName.value = detail.book_name || "";
+      moduleCourseBookDisplay.value = detail.book_display_name || "";
+      moduleCourseMinutes.value = detail.estimated_minutes ?? "";
+      moduleCourseQuizTitle.value = detail.quiz?.title || "";
+      moduleCourseQuizDescription.value = detail.quiz?.description || "";
+
+      const questions = detail.quiz?.questions || [];
+      if (questions.length) {
+        questions.forEach(question => addQuestionBlock(question));
+      } else {
+        addQuestionBlock();
+      }
+    } catch (error) {
+      console.error("Failed to load module course detail", error);
+      showAlert(error.message || "Unable to load course details.");
+      return;
+    }
+  } else {
+    moduleCourseModalTitle.textContent = "Create Module Course";
+    state.editingModuleCourseId = null;
+    if (state.selectedModuleId && state.selectedModuleId !== "all") {
+      moduleCourseModuleId.value = state.selectedModuleId;
+    }
+    addQuestionBlock();
+  }
+
+  moduleCourseModal.classList.remove("hidden");
+  document.body.style.overflow = "hidden";
+}
+
+function closeModuleCourseModal() {
+  if (!moduleCourseModal) return;
+  moduleCourseModal.classList.add("hidden");
+  document.body.style.overflow = "";
+  state.editingModuleCourseId = null;
+  state.questionCounter = 0;
+  if (moduleCourseForm) {
+    moduleCourseForm.reset();
+  }
+  if (moduleQuestionList) {
+    moduleQuestionList.innerHTML = "";
+  }
+}
+
+function populateModuleCourseSelect(selectedId) {
+  if (!moduleCourseModuleId) return;
+  moduleCourseModuleId.innerHTML = "";
+  if (!state.moduleCourses.length) {
+    const placeholder = document.createElement("option");
+    placeholder.value = "";
+    placeholder.textContent = "No modules available";
+    moduleCourseModuleId.appendChild(placeholder);
+    moduleCourseModuleId.disabled = true;
+    return;
+  }
+
+  moduleCourseModuleId.disabled = false;
+  state.moduleCourses.forEach(module => {
+    const option = document.createElement("option");
+    option.value = String(module.id);
+    option.textContent = module.title || module.slug || `Module ${module.id}`;
+    moduleCourseModuleId.appendChild(option);
+  });
+  const valueToSet = selectedId || (state.selectedModuleId !== "all" ? state.selectedModuleId : moduleCourseModuleId.options[0]?.value);
+  if (valueToSet) {
+    moduleCourseModuleId.value = String(valueToSet);
+  }
+}
+
+function addQuestionBlock(question = {}) {
+  if (!moduleQuestionList) return;
+  const block = document.createElement("div");
+  block.className = "question-block";
+  const questionIndex = state.questionCounter++;
+  const groupName = `question-${questionIndex}-correct`;
+
+  block.innerHTML = `
+    <div class="question-block__header">
+      <h4 class="question-block__title">Question</h4>
+      <button type="button" class="question-remove">Remove</button>
+    </div>
+    <label>Prompt
+      <input type="text" class="question-prompt" value="${question.prompt ? escapeHtml(question.prompt) : ""}" required>
+    </label>
+    <label>Explanation (optional)
+      <textarea class="question-explanation">${question.explanation ? escapeHtml(question.explanation) : ""}</textarea>
+    </label>
+    <div class="question-options"></div>
+    <button type="button" class="question-add-option">Add Option</button>
+  `;
+
+  const optionsContainer = block.querySelector(".question-options");
+  const addOptionButton = block.querySelector(".question-add-option");
+  const removeQuestionButton = block.querySelector(".question-remove");
+
+  const providedOptions = Array.isArray(question.options) && question.options.length
+    ? question.options
+    : Array.from({ length: 4 }).map((_, idx) => ({ text: "", is_correct: idx === 0 }));
+
+  providedOptions.forEach(option => {
+    optionsContainer.appendChild(createOptionRow(option, groupName));
+  });
+
+  addOptionButton.addEventListener("click", () => {
+    if (optionsContainer.children.length >= 6) return;
+    optionsContainer.appendChild(createOptionRow({ text: "", is_correct: optionsContainer.children.length === 0 }, groupName));
+  });
+
+  removeQuestionButton.addEventListener("click", () => {
+    block.remove();
+    if (!moduleQuestionList.children.length) {
+      addQuestionBlock();
+    }
+  });
+
+  moduleQuestionList.appendChild(block);
+}
+
+function createOptionRow(option, groupName) {
+  const row = document.createElement("div");
+  row.className = "option-row";
+  row.innerHTML = `
+    <input type="text" class="option-text" value="${option.text ? escapeHtml(option.text) : ""}" placeholder="Option text">
+    <label>
+      <input type="radio" name="${groupName}" class="option-correct" ${option.is_correct ? "checked" : ""}>
+      Correct
+    </label>
+  `;
+  return row;
+}
+
+async function handleModuleCourseSubmit(event) {
+  event.preventDefault();
+  if (!moduleCourseForm) return;
+
+  const moduleId = Number(moduleCourseModuleId.value);
+  if (!moduleId) {
+    showAlert("Please select a module.");
+    return;
+  }
+
+  const courseTitle = moduleCourseTitle.value.trim();
+  if (!courseTitle) {
+    showAlert("Course title is required.");
+    return;
+  }
+
+  const questions = collectQuestionPayload();
+  if (!questions.length) {
+    showAlert("Add at least one quiz question.");
+    return;
+  }
+
+  const payload = {
+    module_id: moduleId,
+    course: {
+      title: courseTitle,
+      slug: moduleCourseSlug.value.trim() || null,
+      order_index: moduleCourseOrder.value ? Number(moduleCourseOrder.value) : null,
+      handout_label: moduleCourseHandout.value.trim() || null,
+      page_range: moduleCoursePages.value.trim() || null,
+      book_name: moduleCourseBookName.value.trim() || null,
+      book_display_name: moduleCourseBookDisplay.value.trim() || null,
+      estimated_minutes: moduleCourseMinutes.value ? Number(moduleCourseMinutes.value) : null,
+    },
+    quiz: {
+      title: moduleCourseQuizTitle.value.trim(),
+      description: moduleCourseQuizDescription.value.trim() || null,
+      questions,
+    },
+  };
+
+  const endpoint = state.editingModuleCourseId
+    ? `/api/admin/module_courses/${state.editingModuleCourseId}`
+    : "/api/admin/module_courses";
+  const method = state.editingModuleCourseId ? "PUT" : "POST";
+
+  try {
+    await fetchJSON(endpoint, {
+      method,
+      body: JSON.stringify(payload),
+    });
+    closeModuleCourseModal();
+    await loadModuleCourses();
+    showAlert("Module course saved.", false);
+  } catch (error) {
+    console.error("Failed to save module course", error);
+    showAlert(error.message || "Unable to save module course.");
+  }
+}
+
+function collectQuestionPayload() {
+  if (!moduleQuestionList) return [];
+  const blocks = [...moduleQuestionList.querySelectorAll(".question-block")];
+  const questions = [];
+
+  blocks.forEach(block => {
+    const promptInput = block.querySelector(".question-prompt");
+    const explanationInput = block.querySelector(".question-explanation");
+    const optionRows = [...block.querySelectorAll(".option-row")];
+
+    const prompt = promptInput?.value.trim();
+    if (!prompt) return;
+
+    const options = optionRows
+      .map(row => {
+        const textInput = row.querySelector(".option-text");
+        const radioInput = row.querySelector(".option-correct");
+        const text = textInput?.value.trim();
+        if (!text) return null;
+        return {
+          text,
+          is_correct: Boolean(radioInput?.checked),
+        };
+      })
+      .filter(Boolean);
+
+    questions.push({
+      prompt,
+      explanation: explanationInput?.value.trim() || null,
+      options,
+    });
+  });
+
+  return questions;
+}
+
+async function loadModuleCourseDetail(courseId) {
+  const { data } = await fetchJSON(`/api/admin/module_courses/${courseId}`);
+  return data.course;
+}
+
+async function deleteModuleCourse(courseId) {
+  if (!courseId) return;
+  if (!confirm("Delete this module course?")) return;
+  try {
+    await fetchJSON(`/api/admin/module_courses/${courseId}`, { method: "DELETE" });
+    await loadModuleCourses();
+    showAlert("Module course deleted.", false);
+  } catch (error) {
+    console.error("Failed to delete module course", error);
+    showAlert(error.message || "Unable to delete module course.");
   }
 }
 
@@ -470,6 +898,16 @@ function debounce(callback, delay) {
     clearTimeout(timeout);
     timeout = setTimeout(() => callback.apply(this, args), delay);
   };
+}
+
+function escapeHtml(value) {
+  if (typeof value !== "string") return "";
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 }
 
 async function fetchJSON(url, options = {}) {

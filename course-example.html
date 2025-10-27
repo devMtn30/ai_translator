@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modules</title>
+    <link rel="stylesheet" href="quiz.css">
+    <link rel="stylesheet" href="../menu/menu.css">
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #638EFF, #4A90E2);
+            color: #fff;
+            min-height: 100vh;
+        }
+
+        /* 상단바 */
+        .navbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 15px 20px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        .menu-btn {
+            font-size: 28px;
+            background: none;
+            border: none;
+            color: #fff;
+            cursor: pointer;
+        }
+
+        .welcome-text {
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .profile-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #fff;
+        }
+
+        /* Container for two-column layout */
+        .container {
+            display: flex;
+            min-height: calc(100vh - 70px); /* Adjust for navbar height */
+        }
+
+        /* Left Sidebar for Dialect Navigation */
+        .dialect-sidebar {
+            width: 250px;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-right: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .dialect-nav {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .dialect-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 15px;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: background 0.3s, transform 0.2s;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .dialect-item:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: scale(1.05);
+        }
+
+        .dialect-map {
+            width: 80px;
+            height: 60px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+        }
+
+        .dialect-name {
+            font-size: 16px;
+            font-weight: 600;
+            text-align: center;
+        }
+
+        /* Main Content Area */
+        .main-content {
+            flex: 1;
+            padding: 40px;
+            overflow-y: auto;
+        }
+
+        .title {
+            font-size: 32px;
+            font-family: 'Georgia', serif;
+            margin-bottom: 10px;
+            text-align: center;
+            color: #fff;
+        }
+
+        .subtitle {
+            font-size: 18px;
+            margin-bottom: 40px;
+            text-align: center;
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .course-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .course-card {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            transition: transform 0.3s, box-shadow 0.3s;
+            cursor: pointer;
+        }
+
+        .course-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .course-map {
+            width: 100px;
+            height: 80px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+        }
+
+        .course-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 15px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #FFD700, #FFA500);
+            border-radius: 4px;
+            transition: width 0.3s;
+        }
+
+        .progress-text {
+            font-size: 14px;
+            margin-bottom: 15px;
+        }
+
+        .play-btn {
+            background: #FFD700;
+            color: #333;
+            border: none;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            font-size: 24px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.3s, transform 0.2s;
+        }
+
+        .play-btn:hover {
+            background: #FFA500;
+            transform: scale(1.1);
+        }
+
+        /* Dropdown arrow */
+        .dropdown-arrow {
+            font-size: 24px;
+            color: #fff;
+            cursor: pointer;
+            margin-top: 10px;
+            transition: transform 0.3s;
+        }
+
+        .dropdown-arrow.expanded {
+            transform: rotate(180deg);
+        }
+
+        /* Expanded content */
+        .expanded-content {
+            display: none;
+            background: #fff;
+            color: #333;
+            padding: 20px;
+            border-radius: 0 0 15px 15px;
+            margin-top: 10px;
+            width: 100%;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .expanded-content.show {
+            display: block;
+        }
+
+        .expanded-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+            padding: 10px;
+            border-radius: 8px;
+            background: #f9f9f9;
+        }
+
+        .expanded-item img {
+            width: 20px;
+            height: 20px;
+            margin-right: 10px;
+        }
+
+        .expanded-item .item-text {
+            flex: 1;
+        }
+
+        .expanded-item .score-date {
+            font-size: 12px;
+            color: #666;
+        }
+
+        /* Dialect-specific colors */
+        .dialect-item[data-dialect="Cebuano"] {
+            border-left: 5px solid #4A90E2;
+        }
+
+        .dialect-item[data-dialect="Kapampangan"] {
+            border-left: 5px solid #9B59B6;
+        }
+
+        .dialect-item[data-dialect="Hiligaynon"] {
+            border-left: 5px solid #E74C3C;
+        }
+
+        .dialect-item[data-dialect="Tagalog"] {
+            border-left: 5px solid #27AE60;
+        }
+
+        .dialect-item[data-dialect="Bicolano"] {
+            border-left: 5px solid #E67E22;
+        }
+
+        .course-card[data-dialect="Cebuano"] {
+            border-top: 5px solid #4A90E2;
+        }
+
+        .course-card[data-dialect="Kapampangan"] {
+            border-top: 5px solid #9B59B6;
+        }
+
+        .course-card[data-dialect="Hiligaynon"] {
+            border-top: 5px solid #E74C3C;
+        }
+
+        .course-card[data-dialect="Tagalog"] {
+            border-top: 5px solid #27AE60;
+        }
+
+        .course-card[data-dialect="Bicolano"] {
+            border-top: 5px solid #E67E22;
+        }
+
+        /* Scrollbar styling */
+        .main-content::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .main-content::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .main-content::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 4px;
+        }
+
+        .main-content::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.5);
+        }
+
+    </style>
+</head>
+<body>
+<!-- 상단 네비게이션 -->
+<header class="navbar">
+    <button id="menuBtn" class="menu-btn">☰</button>
+    <span class="welcome-text">Hi, Player</span>
+    <img src="../assets/avatar.png" alt="Profile" class="profile-icon">
+</header>
+
+<div class="container">
+    <!-- Left Sidebar for Dialect Navigation -->
+    <aside class="dialect-sidebar">
+        <div class="dialect-nav">
+            <div class="dialect-item" data-dialect="Cebuano">
+                <img src="../assets/maps/cebuano.png" alt="Cebuano Map" class="dialect-map">
+                <span class="dialect-name">Cebuano</span>
+            </div>
+            <div class="dialect-item" data-dialect="Kapampangan">
+                <img src="../assets/maps/kapampangan.png" alt="Kapampangan Map" class="dialect-map">
+                <span class="dialect-name">Kapampangan</span>
+            </div>
+            <div class="dialect-item" data-dialect="Hiligaynon">
+                <img src="../assets/maps/hiligaynon.png" alt="Hiligaynon Map" class="dialect-map">
+                <span class="dialect-name">Hiligaynon</span>
+            </div>
+            <div class="dialect-item" data-dialect="Tagalog">
+                <img src="../assets/maps/tagalog.png" alt="Tagalog Map" class="dialect-map">
+                <span class="dialect-name">Tagalog</span>
+            </div>
+            <div class="dialect-item" data-dialect="Bicolano">
+                <img src="../assets/maps/bicolano.png" alt="Bicolano Map" class="dialect-map">
+                <span class="dialect-name">Bicolano</span>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+        <h2 class="title">Courses</h2>
+        <p class="subtitle">Please select a dialect you want to learn.</p>
+        <div id="course-container" class="course-container">
+            <!-- Course cards will be populated here -->
+        </div>
+    </main>
+</div>
+
+<!-- 사이드바 -->
+<aside id="sidebar" class="sidebar">
+    <div class="sidebar-content">
+        <button id="closeBtn" class="close-btn">&times;</button>
+        <ul class="sidebar-menu">
+            <li><a href="../main/main.html"><img src="../assets/icons/home.png" class="icon"> Home</a></li>
+            <li><a href="../history/history.html"><img src="../assets/icons/history.png" class="icon"> History</a></li>
+            <li><a href="../profile/profile.html"><img src="../assets/icons/profile.png" class="icon"> Profile</a></li>
+            <li><a href="../ai-translator/translator.html"><img src="../assets/icons/ai.png" class="icon"> AI Translator</a>
+            </li>
+            <li><a href="quiz.html"><img src="../assets/icons/quiz.png" class="icon"> Courses</a></li>
+            <li><a href="../reader/reader.html"><img src="../assets/icons/read.png" class="icon"> Reader</a></li>
+            <li><a href="../login/login.html"><img src="../assets/icons/logout.png" class="icon"> Logout</a></li>
+        </ul>
+    </div>
+</aside>
+
+<script src="quiz.js"></script>
+<script>const sidebar = document.getElementById("sidebar");
+const menuBtn = document.getElementById("menuBtn");
+const closeBtn = document.getElementById("closeBtn");
+
+menuBtn.addEventListener("click", () => {
+    sidebar.classList.add("open");
+});
+
+closeBtn.addEventListener("click", () => {
+    sidebar.classList.remove("open");
+});
+
+// Dialect selection and course population
+const dialectItems = document.querySelectorAll('.dialect-item');
+const courseContainer = document.getElementById('course-container');
+const title = document.querySelector('.title');
+const subtitle = document.querySelector('.subtitle');
+
+let selectedDialect = null;
+
+// Sample course data for each dialect
+const coursesData = {
+    Cebuano: [
+        {
+            title: 'Cebuano (Basics)',
+            progress: 15,
+            handout: '01 Handout 1',
+            quiz: 'Quiz',
+            score: '10/10',
+            date: 'Oct 23'
+        },
+        {
+            title: 'Cebuano (Intermediate)',
+            progress: 8,
+            handout: '02 Handout 2',
+            quiz: 'Quiz',
+            score: '8/10',
+            date: 'Oct 20'
+        },
+        {
+            title: 'Cebuano (Advanced)',
+            progress: 25,
+            handout: '03 Handout 3',
+            quiz: 'Quiz',
+            score: '9/10',
+            date: 'Oct 18'
+        },
+        {title: 'Cebuano (Expert)', progress: 5, handout: '04 Handout 4', quiz: 'Quiz', score: '7/10', date: 'Oct 15'}
+    ],
+    Kapampangan: [
+        {
+            title: 'Kapampangan (Basics)',
+            progress: 20,
+            handout: '01 Handout 1',
+            quiz: 'Quiz',
+            score: '10/10',
+            date: 'Oct 22'
+        },
+        {
+            title: 'Kapampangan (Intermediate)',
+            progress: 12,
+            handout: '02 Handout 2',
+            quiz: 'Quiz',
+            score: '9/10',
+            date: 'Oct 19'
+        },
+        {
+            title: 'Kapampangan (Advanced)',
+            progress: 18,
+            handout: '03 Handout 3',
+            quiz: 'Quiz',
+            score: '8/10',
+            date: 'Oct 17'
+        },
+        {
+            title: 'Kapampangan (Expert)',
+            progress: 7,
+            handout: '04 Handout 4',
+            quiz: 'Quiz',
+            score: '6/10',
+            date: 'Oct 14'
+        }
+    ],
+    Hiligaynon: [
+        {
+            title: 'Hiligaynon (Basics)',
+            progress: 10,
+            handout: '01 Handout 1',
+            quiz: 'Quiz',
+            score: '10/10',
+            date: 'Oct 21'
+        },
+        {
+            title: 'Hiligaynon (Intermediate)',
+            progress: 15,
+            handout: '02 Handout 2',
+            quiz: 'Quiz',
+            score: '9/10',
+            date: 'Oct 18'
+        },
+        {
+            title: 'Hiligaynon (Advanced)',
+            progress: 22,
+            handout: '03 Handout 3',
+            quiz: 'Quiz',
+            score: '8/10',
+            date: 'Oct 16'
+        },
+        {
+            title: 'Hiligaynon (Expert)',
+            progress: 3,
+            handout: '04 Handout 4',
+            quiz: 'Quiz',
+            score: '5/10',
+            date: 'Oct 13'
+        }
+    ],
+    Tagalog: [
+        {
+            title: 'Tagalog (Basics)',
+            progress: 30,
+            handout: '01 Handout 1',
+            quiz: 'Quiz',
+            score: '10/10',
+            date: 'Oct 20'
+        },
+        {
+            title: 'Tagalog (Intermediate)',
+            progress: 20,
+            handout: '02 Handout 2',
+            quiz: 'Quiz',
+            score: '9/10',
+            date: 'Oct 17'
+        },
+        {
+            title: 'Tagalog (Advanced)',
+            progress: 35,
+            handout: '03 Handout 3',
+            quiz: 'Quiz',
+            score: '8/10',
+            date: 'Oct 15'
+        },
+        {title: 'Tagalog (Expert)', progress: 10, handout: '04 Handout 4', quiz: 'Quiz', score: '7/10', date: 'Oct 12'}
+    ],
+    Bicolano: [
+        {
+            title: 'Bicolano (Basics)',
+            progress: 25,
+            handout: '01 Handout 1',
+            quiz: 'Quiz',
+            score: '10/10',
+            date: 'Oct 19'
+        },
+        {
+            title: 'Bicolano (Intermediate)',
+            progress: 18,
+            handout: '02 Handout 2',
+            quiz: 'Quiz',
+            score: '9/10',
+            date: 'Oct 16'
+        },
+        {
+            title: 'Bicolano (Advanced)',
+            progress: 30,
+            handout: '03 Handout 3',
+            quiz: 'Quiz',
+            score: '8/10',
+            date: 'Oct 14'
+        },
+        {title: 'Bicolano (Expert)', progress: 12, handout: '04 Handout 4', quiz: 'Quiz', score: '6/10', date: 'Oct 11'}
+    ]
+};
+
+function selectDialect(dialect) {
+    selectedDialect = dialect;
+    // Update title and subtitle
+    title.textContent = ` ${dialect} Dialect - Modules`;
+    subtitle.textContent = `Explore and learn ${dialect} dialect.`;
+
+    // Populate courses
+    populateCourses(dialect);
+}
+
+function populateCourses(dialect) {
+    courseContainer.innerHTML = '';
+    const courses = coursesData[dialect] || [];
+    courses.forEach(course => {
+        const courseCard = document.createElement('div');
+        courseCard.className = 'course-card';
+        courseCard.setAttribute('data-dialect', dialect);
+        courseCard.innerHTML = `
+      <img src="../assets/maps/${dialect.toLowerCase()}.png" alt="${dialect} Map" class="course-map">
+      <div class="course-title">${course.title}</div>
+      <div class="progress-bar">
+        <div class="progress-fill" style="width: ${course.progress}%"></div>
+      </div>
+      <div class="progress-text">${course.progress}% Complete</div>
+      <div class="dropdown-arrow">▾</div>
+      <div class="expanded-content">
+        <div class="expanded-item">
+          <img src="../assets/icons/handout.png" alt="Handout">
+          <div class="item-text">${course.handout}</div>
+        </div>
+        <div class="expanded-item">
+          <img src="../assets/icons/quiz.png" alt="Quiz">
+          <div class="item-text">${course.quiz}</div>
+          <div class="score-date">${course.score} - ${course.date}</div>
+        </div>
+      </div>
+    `;
+        // Add event listener for expand/collapse
+        const arrow = courseCard.querySelector('.dropdown-arrow');
+        const expandedContent = courseCard.querySelector('.expanded-content');
+        arrow.addEventListener('click', () => {
+            expandedContent.classList.toggle('show');
+            arrow.classList.toggle('expanded');
+        });
+        courseContainer.appendChild(courseCard);
+    });
+}
+
+function startLesson(courseTitle) {
+    // Placeholder for starting a lesson
+    alert(`Starting lesson: ${courseTitle}`);
+}
+
+// Add event listeners to dialect items
+dialectItems.forEach(item => {
+    item.addEventListener('click', () => {
+        const dialect = item.getAttribute('data-dialect');
+        selectDialect(dialect);
+    });
+});
+</script>
+</body>
+</html>

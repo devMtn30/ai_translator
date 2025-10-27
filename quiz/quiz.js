@@ -17,6 +17,9 @@ const title = document.querySelector(".title");
 const subtitle = document.querySelector(".subtitle");
 const navAvatar = document.querySelector(".profile-icon");
 const DEFAULT_AVATAR = "../assets/avatar.png";
+const urlParams = new URLSearchParams(window.location.search);
+const requestedQuizId = Number(urlParams.get("quizId"));
+let autoStartHandled = false;
 
 menuBtn.addEventListener("click", () => sidebar.classList.add("open"));
 closeBtn.addEventListener("click", () => sidebar.classList.remove("open"));
@@ -76,25 +79,32 @@ function fetchJSON(url, options = {}) {
   });
 }
 
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
   updateWelcomeText();
   resetView();
-  loadQuizzes();
+  await loadQuizzes();
+  maybeAutoStartQuiz();
 });
 
-function loadQuizzes() {
+async function loadQuizzes() {
   quizButtonsContainer.innerHTML = "";
   quizStatus.textContent = "Loading quizzes...";
 
-  fetchJSON("/api/quizzes")
-    .then(payload => {
-      quizzes = (payload.data && payload.data.quizzes) || [];
-      renderQuizButtons();
-    })
-    .catch(err => {
-      console.error("❌ failed loading quiz list:", err);
-      quizStatus.textContent = err.message || "Unable to load quizzes. Please try again.";
-    });
+  try {
+    const payload = await fetchJSON("/api/quizzes");
+    quizzes = (payload.data && payload.data.quizzes) || [];
+    renderQuizButtons();
+  } catch (err) {
+    console.error("❌ failed loading quiz list:", err);
+    quizStatus.textContent = err.message || "Unable to load quizzes. Please try again.";
+  }
+}
+
+function maybeAutoStartQuiz() {
+  if (autoStartHandled) return;
+  if (!Number.isFinite(requestedQuizId)) return;
+  autoStartHandled = true;
+  startQuiz(requestedQuizId);
 }
 
 function renderQuizButtons() {

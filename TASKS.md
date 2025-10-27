@@ -15,6 +15,14 @@
 * [x] If the user reads the same book again, update the timestamp instead of creating a new record.
 * [x] In the History view, display the records sorted by the most recently read time.
 
+### Pending — Requirement #2: PDF Reader & Quiz Flow
+
+* [x] **Course↔Quiz Pairing (docs/TECH_SPEC.md §§4.2, 4.4):** For every module course, fetch its PDF via `/reader/<book_id>` and the matching quiz via `/api/quizzes/<quiz_id>`, ensuring the FE consumes the same metadata that `app.py` exposes so 1 course always routes to 1 quiz.
+* [x] **Progress Calculation (shared FE/BE logic):** Reuse `/api/save_progress`, `reading_progress`, and `quiz_attempts` to compute completion % for each course–quiz pair; surface the % in the UI and make sure advancing from Course 1 → Quiz 1 → Course 2 → Quiz 2 bumps the same backend counters.
+* [x] **Interactive Reader UI (refer to `course-example.html`):** Build the dual-pane layout where the left column lists modules/courses (sticky) and the right panel renders the PDF + quiz detail, matching the styling/UX patterns from the sample.
+* [x] **Prev/Next & Skip Rules:** Implement Next/Prev buttons that disable on the first/last step, treat already-solved quizzes as “Skip” by default, and include a “Reset attempt” control so users can opt back into quizzes instead of skipping.
+* [x] **Sequential Flow Enforcement:** Guard navigation so the Next chain always follows Course n → Quiz n order and persists the state server-side, preventing users from jumping ahead without finishing the paired quiz.
+
 ---
 
 ## Translation & AI Voice Input
@@ -51,10 +59,3 @@
 * [x] Implement user management views: list all members, show online counts, allow profile edits.
 * [x] Build quiz management interface for creating, editing, and deleting questions.
 * [x] Develop dashboard cards summarizing member totals, active users, and recent activity metrics.
-
----
-
-## Infrastructure & Ops
-
-* [ ] Produce initial `requirements.txt` and development bootstrap scripts (venv creation, DB migration stubs).
-* [ ] Align layout/styles with mobile-first Figma design while keeping desktop parity for testing.

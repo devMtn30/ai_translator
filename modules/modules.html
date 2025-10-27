@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Modules</title>
+  <link rel="stylesheet" href="modules.css">
+  <link rel="stylesheet" href="../menu/menu.css">
+</head>
+<body>
+  <header class="navbar">
+    <button id="menuBtn" class="menu-btn" aria-label="Open menu">☰</button>
+    <span class="welcome-text">Hi</span>
+    <img src="../assets/avatar.png" alt="Profile" class="profile-icon">
+  </header>
+
+  <main class="modules-page">
+    <section class="modules-list">
+      <div class="modules-list__header">
+        <div>
+          <p class="eyebrow">Learning Journey</p>
+          <h1>Modules</h1>
+        </div>
+        <button id="syncModules" class="ghost-btn" aria-label="Sync progress">⟳</button>
+      </div>
+      <div id="moduleCards" class="module-card-stack">
+        <div class="skeleton-card"></div>
+        <div class="skeleton-card"></div>
+        <div class="skeleton-card"></div>
+      </div>
+    </section>
+
+    <section class="module-detail">
+      <div class="module-detail__hero">
+        <div>
+          <p id="activeModuleDialect" class="module-detail__eyebrow">Pick a module</p>
+          <h2 id="activeModuleTitle">Track your module progress</h2>
+          <p id="activeModuleSummary">Tap a module card to load its PDF handout and paired quiz.</p>
+        </div>
+        <div class="module-detail__progress">
+          <span id="moduleProgressValue" class="module-detail__value">0%</span>
+          <div class="progress-bar">
+            <div id="moduleProgressFill" class="progress-bar__fill" style="width: 0%;"></div>
+          </div>
+          <small id="moduleProgressMeta" class="progress-bar__meta">0 of 0 steps complete</small>
+        </div>
+      </div>
+
+      <div id="stepChips" class="step-chips"></div>
+
+      <div class="step-viewer">
+        <div class="step-viewer__head">
+          <div>
+            <p id="stepTypeLabel" class="step-viewer__eyebrow">—</p>
+            <h3 id="stepTitle">Select a module to view its PDF + quiz combo.</h3>
+          </div>
+          <span id="stepCountLabel" class="step-viewer__count">Step 0 / 0</span>
+        </div>
+        <div id="skipBanner" class="skip-banner" hidden></div>
+        <div id="stepContent" class="step-content">
+          <p class="empty-state">Choose a module from the list to get started.</p>
+        </div>
+        <div class="step-viewer__nav">
+          <button id="modulePrev" class="pill-btn" disabled>Prev</button>
+          <button id="moduleNext" class="pill-btn pill-btn--primary" disabled>Next</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-content">
+      <button id="closeBtn" class="close-btn" aria-label="Close menu">&times;</button>
+      <ul class="sidebar-menu">
+        <li><a href="../main/main.html"><img src="../assets/icons/home.png" class="icon" alt=""> Home</a></li>
+        <li><a href="../profile/profile.html"><img src="../assets/icons/profile.png" class="icon" alt=""> Profile</a></li>
+        <li><a href="../ai-translator/translator.html"><img src="../assets/icons/ai.png" class="icon" alt=""> AI Translator</a></li>
+        <li><a href="../translator_simple/translator_simple.html"><img src="../assets/icons/ai.png" class="icon" alt=""> Simple Translator</a></li>
+        <li><a href="../modules/modules.html" class="active"><img src="../assets/icons/read.png" class="icon" alt=""> Modules</a></li>
+        <li><a href="../quiz/quiz.html"><img src="../assets/icons/quiz.png" class="icon" alt=""> Quiz</a></li>
+        <li><a href="../reader/reader.html"><img src="../assets/icons/read.png" class="icon" alt=""> Reader</a></li>
+        <li><a href="../admin/admin.html"><img src="../assets/icons/history.png" class="icon" alt=""> Admin</a></li>
+        <li><a href="../login/login.html"><img src="../assets/icons/logout.png" class="icon" alt=""> Logout</a></li>
+      </ul>
+    </div>
+  </aside>
+
+  <script src="modules.js"></script>
+</body>
+</html>
